@@ -67,8 +67,12 @@ parseDatras <- function(x) {
   if (nrow(x) == 0) return(x)
 
   # DATRAS uses -9 and "" to indicate NA
-  x[x == -9] <- NA
-  x[x == ""] <- NA
+  x[x == "-9.0000"] <- NA_character_
+  x[x == "-9.000"] <- NA_character_
+  x[x == "-9.00"] <- NA_character_
+  x[x == "-9.0"] <- NA_character_
+  x[x == "-9"] <- NA_character_
+  x[x == ""] <- NA_character_
 
   # simplify all columns except StatRec (so "45e6" does not become 45000000)
   x[names(x) != "StatRec"] <- simplify(x[names(x) != "StatRec"])
