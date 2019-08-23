@@ -52,6 +52,8 @@ parseDatras <- function(x) {
 
   # match content of first <tag>
   names_x <- gsub(" *<(.*?)>.*", "\\1", x[1:ncol])
+  # EINAR: fix on "Valid_Aphia /", see https://datras.ices.dk/WebServices/DATRASWebService.asmx/getHLdata?survey=NS-IBTS&year=1997&quarter=4
+  names_x <- sub("Valid_Aphia /", "Valid_Aphia", names_x)
 
   # delete all <tags>
   x <- gsub(" *<.*?>", "", x)
