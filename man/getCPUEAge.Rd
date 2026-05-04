@@ -21,7 +21,7 @@ Get CPUE per Age per Haul per Hour for a given Survey, year and Quarter
 }
 \examples{
 \dontrun{
-getCPUEperAge(survey = "NS-IBTS", year = 2018, quarter = 1)
+getCPUEAge(survey = "NS-IBTS", year = 2018, quarter = 1)
 }
 }
 \seealso{
