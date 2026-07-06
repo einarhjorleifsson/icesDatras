@@ -55,7 +55,7 @@ getFlexFile <- function(survey, year, quarter, fix_types = getOption("icesDatras
   out <- readDatras(url)
   out <- parseDatras(out)
   out <- formatDatras(out, 
-                      record = "HH",
+                      record = "FL",
                       fix_types = fix_types,
                       new_names = new_names)
 
