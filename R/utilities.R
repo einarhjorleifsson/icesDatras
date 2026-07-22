@@ -43,7 +43,10 @@ parseDatras <- function(x) {
   type <- gsub(" *<ArrayOf(.*?) .*", "\\1", x[2])
 
   # convert any lazy teminated feilds to full feilds
-  x <- gsub("^ *<(.*?) />$", "<\\1> NA </\\1>", x)
+  # (empty content, not the literal text "NA" -- that text survived as a real,
+  # non-missing value all the way past the x[x == ""] <- NA normalisation below,
+  # for every column type, not just numeric/Age_* ones)
+  x <- gsub("^ *<(.*?) />$", "<\\1></\\1>", x)
   starts <- grep(paste0("<", type, ">"), x)
   ends <- grep(paste0("</", type, ">"), x)
   ncol <- unique(ends[1] - starts[1]) - 1
