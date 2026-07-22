@@ -40,6 +40,7 @@ getCPUELength <- function(survey, year, quarter, fix_types = getOption("icesDatr
       survey, year, quarter)
   out <- readDatras(url)
   out <- parseDatras(out)
+  if (is.null(out)) return(data.frame())
   out <- formatDatras(out,
                       fix_types = fix_types,
                       new_names = new_names)

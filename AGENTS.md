@@ -108,14 +108,20 @@ numeric, the `-9.0` value becomes `-9` and passes through `applyDatrasTypeSchema
 ### Fix 2 — `getDATRAS()` returns `FALSE` instead of a zero-row data frame (`R/getDATRAS.R`)
 
 **What was fixed:** The two availability-check early exits (all years unavailable; all quarters
-unavailable) now `return(data.frame())` rather than `return(FALSE)`. **Update (2026-07-21):**
-this was extended to `R/getFlexFile.R` and `R/getLTassessment.R` too (their own early-exit
-`return(FALSE)`s → `return(data.frame())`) — the "should be fixed in the same sweep" note below
-was acted on; check `git diff` for the actual patches, this file wasn't updated at the time.
-**Still needed, not yet applied:** `getIndices()` and `getCatchWgt()` have the identical
-`return(FALSE)` pattern for their own availability checks (verified live from the `obus` side,
-2026-07-21 — `getIndices(..., year = <unavailable>)` returns `FALSE`, `nrow()` on it errors the
-same way). Same fix, same two functions still to touch.
+unavailable) now `return(data.frame())` rather than `return(FALSE)`. Extended to
+`R/getFlexFile.R` and `R/getLTassessment.R` (their own early-exit `return(FALSE)`s), to
+`R/getIndices.R` (identical pattern), and to `R/getCatchWgt.R` (no availability checks of its
+own — it inherits failure from two internal `getDATRAS()` calls and would otherwise hard-error
+on column-dependent processing against an empty result; needed a new `is.data.frame()`/`nrow()`
+guard, not a mechanical substitution).
+
+**Update (2026-07-22, reported from the `obus` side):** `getCPUELength()` and `getCPUEAge()`
+have the same underlying problem in a different shape — neither has any survey/year/quarter
+validation at all (only a `checkDatrasWebserviceOK()` reachability check), so an unavailable
+cell hits the *`NULL`-propagation* path instead: `parseDatras()` returns `NULL` on an empty
+response, and nothing caught it before `formatDatras()`. Fixed with the same `is.null(out)`
+guard already used in `getDATRAS()`. All 7 functions now consistently return `data.frame()` for
+an empty/unavailable result — this is one story for an eventual upstream ask, not two.
 
 **Upstream issue to raise:**
 > **`getDATRAS()` returns the scalar `FALSE` (or `NULL`) instead of a zero-row data frame**
@@ -141,7 +147,9 @@ same way). Same fix, same two functions still to touch.
 >
 > Fix the early exits with `return(data.frame())` and add a `NULL` guard after
 > `do.call(rbind, out)`. The same early-exit issue exists in `getFlexFile()` and
-> `getLTassessment()` and should be fixed in the same sweep.
+> `getLTassessment()`, and the same `NULL`-propagation issue exists in `getIndices()`,
+> `getCatchWgt()`, `getCPUELength()`, and `getCPUEAge()` — all seven functions should be
+> covered by one comprehensive fix/PR, not raised piecemeal.
 
 ---
 
@@ -175,8 +183,9 @@ capture at the first space or `>` and then skips any remaining tag attributes wi
 
 ---
 
-### Fix 4 (not yet applied here — found from the `obus` side, 2026-07-21) — a numeric column
-stays `character("NA")` when it's entirely missing in one response, even after Fix 3's name fix
+### Fix 4 — a numeric column stays `character("NA")` when it's entirely missing in one
+response, even after Fix 3's name fix (found from the `obus` side, 2026-07-21; applied here
+2026-07-22, `einar_dev/age-na-string-coercion`)
 
 **Distinct from Fix 3.** Fix 3 stops the `xsi:nil` *attribute* leaking into the column *name*.
 This is a separate bug in the column's *value*, one level deeper — it happens even with Fix 3
@@ -213,13 +222,14 @@ since there's no other row's real value to pull the column's inferred type towar
    `0` for a column made entirely of these converted empty tags. `0 != n`, the guard fails, and
    the whole column is left `character`, with the literal text `"NA"` in every cell.
 
-**Reproduce:**
+**Reproduce (pre-fix behaviour):**
 ```r
 d <- getIndices(survey = "NS-IBTS", year = 1965, quarter = 1, species = 126417,
                 fix_types = TRUE, new_names = TRUE)
 sapply(d[grep("^Age_", names(d))], class)
-# Age_0-5 numeric/integer (real catch at those ages here); Age_6-15 character,
-# holding the literal string "NA"
+# before the fix: Age_0-5 numeric/integer (real catch at those ages here); Age_6-15
+# character, holding the literal string "NA". After the fix (verified live): all 16
+# Age_0..Age_15 columns come back numeric/integer, none character.
 ```
 
 **Impact:** affects every function going through `formatDatras(fix_types = TRUE)` whenever a
@@ -230,10 +240,11 @@ as character, breaking any tool that expects one type per column across files (D
 `bind_rows()` without prior coercion) — this is exactly how it was found, from the `obus` side,
 building a per-response parquet archive of `getIndices()` output.
 
-**Suggested fix:** in `parseDatras()`, either encode a missing value as an empty string instead
-of the literal text `"NA"` (consistent with the existing `""` → `NA` handling two lines later),
-or explicitly add `x[x == "NA"] <- NA` alongside the existing `-9`/`""` normalization. Either
-removes the count mismatch that defeats `simplify()`'s numeric-conversion check.
+**Fix applied:** in `parseDatras()`, the self-closing-tag expansion now produces empty content
+instead of the literal text `"NA"` (the first of the two options above), so the existing
+`x[x == ""] <- NA` normalisation catches it — for every column type, not just numeric ones.
+Also confirmed live: declared-character columns (e.g. `StatRec`) had the identical gap and are
+now covered too, not just `Age_*`.
 
 **Full writeup with commit-pinned citations against both this fork and upstream:**
 `~/R/Pakkar/obus/dev/upstream_reports/getindices_age_column_type_inconsistency.qmd`.
