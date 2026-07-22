@@ -157,14 +157,95 @@ name (<code>IndividualAge</code>) nor its documented old name
 <code>new_names = FALSE</code>.</li>
 <li>
 <strong>A locally-invented name diverging from ICES’s own real
-direction</strong> – this package had translated
-<code>Valid_Aphia</code> to a made-up canonical name,
-<code>aphia</code>; the one place ICES’s real header migration touches
+direction</strong> – this is not something
+<code>ices-tools-prod/icesDatras</code> (upstream, the “mother repo”)
+ever did: the official field list has no entry for this column at all.
+This <em>fork’s</em> own local hot-fix block had filled that gap by
+translating <code>Valid_Aphia</code> to a made-up canonical name,
+<code>aphia</code>. The one place ICES’s real header migration touches
 this field (<code>getHLdataNewHeaders</code>) still calls it
-<code>Valid_Aphia</code>, unchanged.</li>
+<code>Valid_Aphia</code>, unchanged – so the invented name diverged from
+ICES’s own actual direction, not from anything upstream chose.</li>
 </ol>
-<p>Items 1-5 predate this session; items 6-7 were found and patched
+<p>Items 1-5 predate this session and originate from this fork’s own
+hot-fix block, not from upstream; items 6-7 were found and patched
 here.</p>
+</div>
+<div class="section level2">
+<h2 id="discrepancies-across-tables-not-just-within-one">Discrepancies across tables, not just within one<a class="anchor" aria-label="anchor" href="#discrepancies-across-tables-not-just-within-one"></a>
+</h2>
+<p>Everything above is one record type’s own field list being wrong or
+incomplete. A related, likely larger issue sits one level up: ICES’s own
+data model has inconsistencies <em>across</em>
+HH/HL/CA/FL/LT/Indices/CPUE* – in both naming conventions and typing –
+that a client library has no business trying to resolve on its own.</p>
+<p>A broader, separate investigation (comparing this package against
+<code>{DATRAS}</code>, <code>{DATRASextra}</code>, and other independent
+DATRAS consumers directly) landed on a useful distinction: HH/HL/CA are
+institute <em>measurements</em> – interpreting them (units, codes, key
+uniqueness, naming) has exactly one right answer, so every downstream
+tool solving that independently is waste, not legitimate scientific
+difference. Derived products (FL, indices, spread models) are a
+different case and can legitimately diverge – that’s normal practice,
+not a bug.</p>
+<p>Two concrete cases from that investigation bear directly on this
+package:</p>
+<ul>
+<li>
+<strong>A value’s actual meaning sometimes depends on a different
+column, from a different table.</strong>
+<code>NumberAtLength</code>/<code>SpeciesCategoryWeight</code> in HL
+only mean something once joined against
+<code>DataType</code>/<code>HaulDuration</code> from HH – exactly the
+correction this package’s own <code><a href="../reference/getCatchWgt.html">getCatchWgt()</a></code> gets wrong for
+<code>DataType == "C"</code> (see the companion article).
+<code>LengthClass</code> similarly means nothing without its companion
+<code>LngtCode</code>.</li>
+<li>
+<strong>Old-name/new-name inconsistency</strong> was named,
+independently of anything in this package, as one of a handful of things
+every serious downstream DATRAS tool ends up re-solving on its own. This
+package’s own field-list hot-fix (documented above) is one instance of
+that pattern, not an isolated case.</li>
+</ul>
+<p>None of this is fixable by patching <code>icesDatras</code>. A
+client-side patch can only ever correct the symptom for this package’s
+own users – the actual fix is ICES settling on one answer at the
+data-model level, which is a question for a Working Group (IBTSWG has
+been suggested as the right venue, since DATRAS already briefed them on
+related work), not something a webservice client can resolve for
+itself.</p>
+</div>
+<div class="section level2">
+<h2 id="icesvocab-a-related-currently-unused-source-of-fieldvocabulary-truth">icesVocab: a related, currently-unused source of field/vocabulary
+truth<a class="anchor" aria-label="anchor" href="#icesvocab-a-related-currently-unused-source-of-fieldvocabulary-truth"></a>
+</h2>
+<p><code>icesVocab</code> – a separate ICES package, not currently
+consulted by <code>icesDatras</code> for anything – governs the
+<em>values</em> many DATRAS fields are allowed to take (gear codes,
+data-type codes, validity flags, and more) via
+<code>getCodeList(code_type, ...)</code>. Two things about it are
+relevant here, both confirmed directly rather than assumed:</p>
+<ul>
+<li>It’s piecemeal in the same way <code><a href="../reference/getDatrasFieldList.html">getDatrasFieldList()</a></code> is:
+<code><a href="https://rdrr.io/pkg/icesVocab/man/getCodeList.html" class="external-link">getCodeList()</a></code> takes exactly one <code>code_type</code> per
+call with no bulk/“all” option, and <code><a href="https://rdrr.io/pkg/icesVocab/man/getCodeTypeList.html" class="external-link">getCodeTypeList()</a></code>
+returns type <em>names</em> only, not their code values. Even ICES’s own
+official DATSU submission-validation code
+(<code>icesDatsuQC::runVocabChecks()</code>) loops the same way
+internally – there’s no bulk shortcut even from the inside.</li>
+<li>Some DATRAS-relevant fields (<code>HaulVal</code>,
+<code>Gear</code>, <code>DataType</code> among them) aren’t registered
+under any DATRAS-specific grouping in <code>icesVocab</code>’s own
+<code>findCodeType("DATRAS")</code> helper, so it wouldn’t fully cover
+this package’s fields even if adopted.</li>
+</ul>
+<p>Separately: some field <em>descriptions</em> – in
+<code><a href="../reference/getDatrasFieldList.html">getDatrasFieldList()</a></code>’s own <code>Description</code> column
+– appear to be wrong, occasionally with the hallmarks of a copy-paste
+from a different field. Noted directly from working with the data, not
+yet catalogued case by case here; worth a dedicated pass at some point,
+distinct from the naming/typing gaps above.</p>
 </div>
 <div class="section level2">
 <h2 id="steps-used-to-find-and-confirm-each-gap">Steps used to find and confirm each gap<a class="anchor" aria-label="anchor" href="#steps-used-to-find-and-confirm-each-gap"></a>

@@ -83,12 +83,89 @@ actually returns:
     (`IndividualAge`) nor its documented old name (`AgeRings`) –
     confirmed live, even with `new_names = FALSE`.
 7.  **A locally-invented name diverging from ICES’s own real direction**
-    – this package had translated `Valid_Aphia` to a made-up canonical
-    name, `aphia`; the one place ICES’s real header migration touches
-    this field (`getHLdataNewHeaders`) still calls it `Valid_Aphia`,
-    unchanged.
+    – this is not something `ices-tools-prod/icesDatras` (upstream, the
+    “mother repo”) ever did: the official field list has no entry for
+    this column at all. This *fork’s* own local hot-fix block had filled
+    that gap by translating `Valid_Aphia` to a made-up canonical name,
+    `aphia`. The one place ICES’s real header migration touches this
+    field (`getHLdataNewHeaders`) still calls it `Valid_Aphia`,
+    unchanged – so the invented name diverged from ICES’s own actual
+    direction, not from anything upstream chose.
 
-Items 1-5 predate this session; items 6-7 were found and patched here.
+Items 1-5 predate this session and originate from this fork’s own
+hot-fix block, not from upstream; items 6-7 were found and patched here.
+
+## Discrepancies across tables, not just within one
+
+Everything above is one record type’s own field list being wrong or
+incomplete. A related, likely larger issue sits one level up: ICES’s own
+data model has inconsistencies *across* HH/HL/CA/FL/LT/Indices/CPUE\* –
+in both naming conventions and typing – that a client library has no
+business trying to resolve on its own.
+
+A broader, separate investigation (comparing this package against
+`{DATRAS}`, `{DATRASextra}`, and other independent DATRAS consumers
+directly) landed on a useful distinction: HH/HL/CA are institute
+*measurements* – interpreting them (units, codes, key uniqueness,
+naming) has exactly one right answer, so every downstream tool solving
+that independently is waste, not legitimate scientific difference.
+Derived products (FL, indices, spread models) are a different case and
+can legitimately diverge – that’s normal practice, not a bug.
+
+Two concrete cases from that investigation bear directly on this
+package:
+
+- **A value’s actual meaning sometimes depends on a different column,
+  from a different table.** `NumberAtLength`/`SpeciesCategoryWeight` in
+  HL only mean something once joined against `DataType`/`HaulDuration`
+  from HH – exactly the correction this package’s own
+  [`getCatchWgt()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCatchWgt.md)
+  gets wrong for `DataType == "C"` (see the companion article).
+  `LengthClass` similarly means nothing without its companion
+  `LngtCode`.
+- **Old-name/new-name inconsistency** was named, independently of
+  anything in this package, as one of a handful of things every serious
+  downstream DATRAS tool ends up re-solving on its own. This package’s
+  own field-list hot-fix (documented above) is one instance of that
+  pattern, not an isolated case.
+
+None of this is fixable by patching `icesDatras`. A client-side patch
+can only ever correct the symptom for this package’s own users – the
+actual fix is ICES settling on one answer at the data-model level, which
+is a question for a Working Group (IBTSWG has been suggested as the
+right venue, since DATRAS already briefed them on related work), not
+something a webservice client can resolve for itself.
+
+## icesVocab: a related, currently-unused source of field/vocabulary truth
+
+`icesVocab` – a separate ICES package, not currently consulted by
+`icesDatras` for anything – governs the *values* many DATRAS fields are
+allowed to take (gear codes, data-type codes, validity flags, and more)
+via `getCodeList(code_type, ...)`. Two things about it are relevant
+here, both confirmed directly rather than assumed:
+
+- It’s piecemeal in the same way
+  [`getDatrasFieldList()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasFieldList.md)
+  is:
+  [`getCodeList()`](https://rdrr.io/pkg/icesVocab/man/getCodeList.html)
+  takes exactly one `code_type` per call with no bulk/“all” option, and
+  [`getCodeTypeList()`](https://rdrr.io/pkg/icesVocab/man/getCodeTypeList.html)
+  returns type *names* only, not their code values. Even ICES’s own
+  official DATSU submission-validation code
+  (`icesDatsuQC::runVocabChecks()`) loops the same way internally –
+  there’s no bulk shortcut even from the inside.
+- Some DATRAS-relevant fields (`HaulVal`, `Gear`, `DataType` among them)
+  aren’t registered under any DATRAS-specific grouping in `icesVocab`’s
+  own `findCodeType("DATRAS")` helper, so it wouldn’t fully cover this
+  package’s fields even if adopted.
+
+Separately: some field *descriptions* – in
+[`getDatrasFieldList()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasFieldList.md)’s
+own `Description` column – appear to be wrong, occasionally with the
+hallmarks of a copy-paste from a different field. Noted directly from
+working with the data, not yet catalogued case by case here; worth a
+dedicated pass at some point, distinct from the naming/typing gaps
+above.
 
 ## Steps used to find and confirm each gap
 
