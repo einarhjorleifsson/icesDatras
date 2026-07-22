@@ -38,6 +38,10 @@ getDatrasFieldList <- function() {
     out$FieldNameOld[out$RecordHeader == "LT" & out$FieldName == "StationName"] <- "StNo"
     out$FieldNameOld[out$RecordHeader == "LT" & out$FieldName == "HaulNumber"]  <- "HaulNo"
 
+    # CA: FieldNameOld says "AgeRings" but the live server actually sends "Age"
+    # (confirmed live 2026-07-22, even with new_names = FALSE).
+    out$FieldNameOld[out$RecordHeader == "CA" & out$FieldName == "IndividualAge"] <- "Age"
+
     # LT: the URL only covers the upload-spec fields; getLTassessment() returns many
     # additional HH-style columns that are absent from the URL list, so new_names
     # translation silently fails for them.  Add the missing entries here.
@@ -114,10 +118,13 @@ getDatrasFieldList <- function() {
     out <- rbind(out, fl_from_hh, fl_extra)
 
     # DB-added columns not in the upload spec: DateofCalculation (HH/HL/CA) and
-    # Valid_Aphia (HL/CA, mapped to new name "aphia").
+    # Valid_Aphia (HL/CA). FieldName == FieldNameOld == "Valid_Aphia" deliberately (no
+    # rename): ICES's own getHLdataNewHeaders endpoint still calls this field "Valid_Aphia"
+    # (confirmed live 2026-07-22), so this repo aligns to ICES's real direction rather than
+    # inventing its own "aphia" name, per the naming rule below.
     db_extra <- data.frame(
       RecordHeader = c("HH",               "HL",               "HL",          "CA",               "CA"),
-      FieldName    = c("DateofCalculation", "DateofCalculation", "aphia",       "DateofCalculation", "aphia"),
+      FieldName    = c("DateofCalculation", "DateofCalculation", "Valid_Aphia", "DateofCalculation", "Valid_Aphia"),
       FieldNameOld = c("DateofCalculation", "DateofCalculation", "Valid_Aphia", "DateofCalculation", "Valid_Aphia"),
       DataFormat   = c("int",               "int",               "int",         "int",               "int"),
       Description  = "",
