@@ -7,3 +7,5 @@ codecov.yml
 ^data-raw$
 LICENSE
 ^CRAN-SUBMISSION$
+^\.claude$
+^vignettes/articles$

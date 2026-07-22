@@ -1,0 +1,144 @@
+---
+title: "Recent Fixes and Field-List Corrections"
+output: rmarkdown::html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+## Why this exists
+
+This fork (`einarhjorleifsson/icesDatras`) tracks
+[ices-tools-prod/icesDatras](https://github.com/ices-tools-prod/icesDatras) closely --
+as of writing, one commit ahead of upstream `master`. While using the package as a
+dependency of another project ([obus](https://github.com/einarhjorleifsson/obus)),
+several real, reproducible bugs surfaced. This article documents what was found, what
+was fixed, why -- and, just as importantly, one thing that looked like a bug but wasn't.
+
+Everything here lives on `einar_dev/integration` in this fork, not yet on `master` and
+not yet proposed upstream. It's written up both as a personal reference and as a
+starting point should it be worth raising with the people maintaining the upstream
+repository.
+
+## A three-way distinction that shaped what got "fixed" here
+
+Not every wrong-looking result is fixable the same way:
+
+- **Code bug** -- given the same values the DATRAS API already returns, a function's
+  own logic produces a result that contradicts a clear, well-defined convention.
+  Fixable permanently in this package's own R source.
+- **Data bug** -- the values themselves, as submitted to DATRAS, are wrong or
+  inconsistent regardless of what any client code does with them. Not fixable here at
+  all.
+- **Webserver/schema gap** -- ICES's own field-list webservice
+  (`getDatrasFieldList()`) is missing or wrong, even though the underlying survey data
+  is fine. Fixable here only as an interim, escapable patch -- the real fix belongs on
+  ICES's server.
+
+This distinction is what kept one investigation (below) from turning into an incorrect
+"fix."
+
+## Fixes
+
+### 1. `-9` sentinel not fully scrubbed to `NA`
+
+`applyDatrasTypeSchema()` coerced column types but never converted DATRAS's `-9`
+missing-value sentinel to `NA`. `parseDatras()` already caught the *string* `"-9"`, but
+not decimal forms like `"-9.0"` -- a valid representation DATRAS uses for missing float
+fields. After `simplify()` converts such a string to numeric, the value becomes `-9`
+and passed through unchanged.
+
+```r
+x <- data.frame(HaulDur = -9)
+applyDatrasTypeSchema(x, record = "HH")$HaulDur
+#> [1] -9      # before the fix -- should be NA
+```
+
+**Fix:** explicit `-9`/`-9L` scrubbing added to `applyDatrasTypeSchema()` for all
+`int`/`decimal` columns, after type coercion.
+
+### 2. Empty or unavailable results returned `FALSE`/`NULL` instead of a data frame
+
+`getDATRAS()`, `getFlexFile()`, `getLTassessment()`, `getIndices()`, and
+`getCatchWgt()` all had at least one path that returned a bare `FALSE` (an invalid
+survey name, an unavailable year/quarter) or, for `getDATRAS()`, silently returned
+`NULL` when an empty XML response collapsed via `do.call(rbind, .)`. Both break
+idiomatic downstream code:
+
+```r
+out <- getDATRAS("HH", "NS-IBTS", years = 1800, quarters = 1)
+nrow(out)
+#> Error: argument is not a data frame
+```
+
+**Fix:** every such early exit now returns `data.frame()`. `getCatchWgt()` needed a
+genuinely new guard -- it has no availability checks of its own, it inherits failure
+from two internal `getDATRAS()` calls, and would otherwise hard-error on
+column-dependent processing against an empty result.
+
+### 3. `xsi:nil` XML attribute leaking into column names
+
+DATRAS represents a missing field as a self-closing tag, e.g.
+`<Age_6 xsi:nil="true" />`. `parseDatras()`'s name-extraction regex relied on a lazy
+quantifier (`(.*?)`) that isn't reliably supported across regex engines, and captured
+the whole `Age_6 xsi:nil="true"` as the column name instead of `Age_6`.
+
+**Fix:** replaced with `([^ >]+)[^>]*`, which stops the capture at the first space or
+`>` without relying on lazy-quantifier support. Verified live: all 16 `Age_0`-`Age_15`
+columns from a real `getIndices()` call now come back with clean names.
+
+### 4. Literal text `"NA"` surviving as a real, non-missing value
+
+A deeper, separate bug in the same area: the self-closing-tag expansion in
+`parseDatras()` produced the *literal text* `"NA"` as the field's content, not a true
+`NA`. Two lines later, `-9` and `""` are explicitly normalised to `NA` -- but `"NA"`
+was never included, and `is.na("NA")` is `FALSE`, so `simplify()`'s numeric-conversion
+guard was fooled and left the whole column as `character`, holding the string `"NA"` in
+every affected cell.
+
+**Fix:** the tag expansion now produces empty content rather than the literal text
+`"NA"`, so the existing `x[x == ""] <- NA` normalisation catches it -- for every column
+type, not just numeric ones. This was a real gap beyond `Age_*`: declared-character
+columns got zero scrubbing either.
+
+### 5. Field-list webserver gaps (interim patches, not code bugs)
+
+Two corrections to `getDatrasFieldList()`'s existing hot-fix block, both examples of
+the third category above:
+
+- **`aphia` naming** -- the hot-fix had invented `aphia` as the "new" name for
+  `Valid_Aphia`. Cross-checked against ICES's own `getHLdataNewHeaders` endpoint (the
+  one place ICES is actively rolling out new header names) -- it still calls this
+  field `Valid_Aphia`, unchanged. Realigned to match ICES's actual direction rather
+  than this repo's own invention.
+- **CA `Age` gap** -- `getDATRAS("CA", ...)` returns a column literally named `Age`,
+  matching neither the field list's `IndividualAge` (new) nor `AgeRings` (old) -- even
+  with `new_names = FALSE`, confirming the raw server response itself uses `Age`.
+  Corrected the field list's `FieldNameOld` accordingly, the same pattern already used
+  for three analogous LT corrections.
+
+## Investigated, not fixed: `getCatchWgt()` and `DataType == "C"`
+
+The most interesting negative result. `getCatchWgt()` never applies a
+`HaulDuration/60` scaling for `DataType == "C"` hauls -- initial evidence (2020 data)
+showed catch weights inflated by exactly that factor on affected hauls. This looked
+like a clean code bug.
+
+But `R/zzz.R`'s own package-startup message already warns: *"there are known issues
+with the way CatCatchWgt has been reported until 2023."* That's ICES's own disclaimer,
+and it lines up: checking real NS-IBTS 2024 Q1 data, the median catch-per-minute-towed
+for `DataType == "C"` hauls is **~0.97x** the `DataType == "R"` rate -- not ~60x.
+Post-2023 submissions are already correctly per-haul.
+
+Applying the "obvious" fix now would have *broken* current and future data while only
+helping historical records. Conclusion: a data bug, time-bounded and already resolved,
+not a `getCatchWgt()` code bug. No change made.
+
+## What's next
+
+Two of the fixes above map directly onto an issue already filed upstream by the same
+author: [#48](https://github.com/ices-tools-prod/icesDatras/issues/48) (fixes 3 and 4).
+[#47](https://github.com/ices-tools-prod/icesDatras/issues/47) is adjacent to the
+field-list gaps in fix 5. Whether/when to send any of this as pull requests to
+`ices-tools-prod/icesDatras` is a separate, unhurried decision.
