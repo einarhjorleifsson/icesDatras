@@ -179,14 +179,13 @@ incomplete. A related, likely larger issue sits one level up: ICES’s own
 data model has inconsistencies <em>across</em>
 HH/HL/CA/FL/LT/Indices/CPUE* – in both naming conventions and typing –
 that a client library has no business trying to resolve on its own.</p>
-<p>A broader, separate investigation (comparing this package against
-<code>{DATRAS}</code>, <code>{DATRASextra}</code>, and other independent
-DATRAS consumers directly) landed on a useful distinction: HH/HL/CA are
-institute <em>measurements</em> – interpreting them (units, codes, key
-uniqueness, naming) has exactly one right answer, so every downstream
-tool solving that independently is waste, not legitimate scientific
-difference. Derived products (FL, indices, spread models) are a
-different case and can legitimately diverge – that’s normal practice,
+<p>A broader, separate investigation comparing several independent
+DATRAS-consuming tools directly landed on a useful distinction: HH/HL/CA
+are institute <em>measurements</em> – interpreting them (units, codes,
+key uniqueness, naming) has exactly one right answer, so every
+downstream tool solving that independently is waste, not legitimate
+scientific difference. Derived products (FL, indices, spread models) are
+a different case and can legitimately diverge – that’s normal practice,
 not a bug.</p>
 <p>Two concrete cases from that investigation bear directly on this
 package:</p>
@@ -250,38 +249,57 @@ distinct from the naming/typing gaps above.</p>
 <div class="section level2">
 <h2 id="steps-used-to-find-and-confirm-each-gap">Steps used to find and confirm each gap<a class="anchor" aria-label="anchor" href="#steps-used-to-find-and-confirm-each-gap"></a>
 </h2>
-<p>The method was the same each time, and is worth naming as a
-repeatable recipe rather than a one-off:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Fetch real data, compare column names against the field list
-directly.</strong> For each record type, pull a live response and check
-<code>setdiff(names(response), union(field_list$FieldNameOld, field_list$FieldName))</code>
-for that <code>RecordHeader</code>. Anything left over has no entry at
-all – this is what surfaced the CA <code>Age</code> gap, and confirmed
-it was the <em>only</em> such gap across HH/HL/CA/FL/LT for the survey/
-quarter checked.</li>
-<li>
-<strong>Repeat with <code>new_names = FALSE</code></strong>
-specifically, to localise <em>where</em> a gap sits. If the raw,
-untranslated response already uses a name absent from the field list’s
-<code>FieldNameOld</code> column, the field list’s metadata is wrong or
-incomplete – not a translation bug in this package.</li>
-<li>
-<strong>Where a real “new headers” endpoint exists, cross-check
+<p>The method was the same each time. Code, not just a description of it
+– each of these ran against real DATRAS data during this
+investigation.</p>
+<p><strong>1. Fetch real data, compare column names against the field
+list directly.</strong></p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDatrasFieldList.html">getDatrasFieldList</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, fix_types <span class="op">=</span> <span class="cn">FALSE</span>, new_names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">known</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fl</span><span class="op">$</span><span class="va">FieldNameOld</span><span class="op">[</span><span class="va">fl</span><span class="op">$</span><span class="va">RecordHeader</span> <span class="op">==</span> <span class="st">"CA"</span><span class="op">]</span>,</span>
+<span>                   <span class="va">fl</span><span class="op">$</span><span class="va">FieldName</span><span class="op">[</span><span class="va">fl</span><span class="op">$</span><span class="va">RecordHeader</span> <span class="op">==</span> <span class="st">"CA"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ca</span><span class="op">)</span>, <span class="va">known</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Age"</span></span></code></pre></div>
+<p>Repeated across HH/HL/CA/FL/LT for the same survey/quarter,
+<code>"Age"</code> in CA was the <em>only</em> column left over with no
+field-list entry at all – everything else already had one.</p>
+<p><strong>2. Repeat with <code>new_names = FALSE</code>
+specifically</strong>, to localise <em>where</em> a gap actually
+sits.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="st">"Age"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, new_names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="st">"Age"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, new_names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Same result either way. If the raw, untranslated response already
+uses a name absent from the field list’s <code>FieldNameOld</code>
+column, the field list’s metadata is what’s wrong – not a translation
+bug in this package.</p>
+<p><strong>3. Where a real “new headers” endpoint exists, cross-check
 against it directly</strong> rather than trusting this package’s own
-translation as ground truth. This is what caught the
-<code>aphia</code>/<code>Valid_Aphia</code> divergence – without a
-second, independent source for what ICES actually calls a field, a
-locally-invented name can look correct indefinitely.</li>
-<li>
-<strong>Treat every fix found this way as interim, not
+translation as ground truth.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">url_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://datras.ices.dk/WebServices/DATRASWebService.asmx/getHLdataNewHeaders"</span>,</span>
+<span>  <span class="st">"?survey=NS-IBTS&amp;year=2022&amp;quarter=1"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">new_headers</span>   <span class="op">&lt;-</span> <span class="fu">parseDatras</span><span class="op">(</span><span class="fu">readDatras</span><span class="op">(</span><span class="va">url_new</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">hl_translated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"HL"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, fix_types <span class="op">=</span> <span class="cn">FALSE</span>, new_names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">new_headers</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hl_translated</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Valid_Aphia"    # ICES's real endpoint still uses this name...</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hl_translated</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">new_headers</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "aphia"          # ...but this package had invented a different one</span></span></code></pre></div>
+<p>Without a second, independent source for what ICES actually calls a
+field, a locally-invented name can look correct indefinitely.</p>
+<p><strong>4. Treat every fix found this way as interim, not
 final.</strong> The field list is ICES’s data, not this package’s – a
 patch here corrects the symptom for this package’s users, but the
 underlying gap still needs reporting to ICES Datacenter directly (a
 different channel to whoever maintains the <code>icesDatras</code> R
-package code on GitHub – not yet identified as of writing).</li>
-</ol>
+package code on GitHub – not yet identified as of writing).</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

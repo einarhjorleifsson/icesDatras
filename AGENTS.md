@@ -129,20 +129,32 @@ values \> arrive.
 
 **What was fixed:** The two availability-check early exits (all years
 unavailable; all quarters unavailable) now `return(data.frame())` rather
-than `return(FALSE)`. **Update (2026-07-21):** this was extended to
-`R/getFlexFile.R` and `R/getLTassessment.R` too (their own early-exit
-`return(FALSE)`s → `return(data.frame())`) — the “should be fixed in the
-same sweep” note below was acted on; check `git diff` for the actual
-patches, this file wasn’t updated at the time. **Still needed, not yet
-applied:**
-[`getIndices()`](https://einarhjorleifsson.github.io/icesDatras/reference/getIndices.md)
+than `return(FALSE)`. Extended to `R/getFlexFile.R` and
+`R/getLTassessment.R` (their own early-exit `return(FALSE)`s), to
+`R/getIndices.R` (identical pattern), and to `R/getCatchWgt.R` (no
+availability checks of its own — it inherits failure from two internal
+[`getDATRAS()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDATRAS.md)
+calls and would otherwise hard-error on column-dependent processing
+against an empty result; needed a new
+[`is.data.frame()`](https://rdrr.io/r/base/as.data.frame.html)/[`nrow()`](https://rdrr.io/r/base/nrow.html)
+guard, not a mechanical substitution).
+
+**Update (2026-07-22, reported from the `obus` side):**
+[`getCPUELength()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCPUELength.md)
 and
-[`getCatchWgt()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCatchWgt.md)
-have the identical `return(FALSE)` pattern for their own availability
-checks (verified live from the `obus` side, 2026-07-21 —
-`getIndices(..., year = <unavailable>)` returns `FALSE`,
-[`nrow()`](https://rdrr.io/r/base/nrow.html) on it errors the same way).
-Same fix, same two functions still to touch.
+[`getCPUEAge()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCPUEAge.md)
+have the same underlying problem in a different shape — neither has any
+survey/year/quarter validation at all (only a
+`checkDatrasWebserviceOK()` reachability check), so an unavailable cell
+hits the *`NULL`-propagation* path instead: `parseDatras()` returns
+`NULL` on an empty response, and nothing caught it before
+`formatDatras()`. Fixed with the same `is.null(out)` guard already used
+in
+[`getDATRAS()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDATRAS.md).
+All 7 functions now consistently return
+[`data.frame()`](https://rdrr.io/r/base/data.frame.html) for an
+empty/unavailable result — this is one story for an eventual upstream
+ask, not two.
 
 **Upstream issue to raise:** \>
 **[`getDATRAS()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDATRAS.md)
@@ -163,8 +175,16 @@ guard after \> `do.call(rbind, out)`. The same early-exit issue exists
 in
 [`getFlexFile()`](https://einarhjorleifsson.github.io/icesDatras/reference/getFlexFile.md)
 and \>
-[`getLTassessment()`](https://einarhjorleifsson.github.io/icesDatras/reference/getLTassessment.md)
-and should be fixed in the same sweep.
+[`getLTassessment()`](https://einarhjorleifsson.github.io/icesDatras/reference/getLTassessment.md),
+and the same `NULL`-propagation issue exists in
+[`getIndices()`](https://einarhjorleifsson.github.io/icesDatras/reference/getIndices.md),
+\>
+[`getCatchWgt()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCatchWgt.md),
+[`getCPUELength()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCPUELength.md),
+and
+[`getCPUEAge()`](https://einarhjorleifsson.github.io/icesDatras/reference/getCPUEAge.md)
+— all seven functions should be \> covered by one comprehensive fix/PR,
+not raised piecemeal.
 
 ------------------------------------------------------------------------
 
@@ -189,10 +209,10 @@ skipped without relying on \> lazy quantifier support: \> \>
 
 ------------------------------------------------------------------------
 
-### Fix 4 (not yet applied here — found from the `obus` side, 2026-07-21) — a numeric column
+### Fix 4 — a numeric column stays `character("NA")` when it’s entirely missing in one
 
-stays `character("NA")` when it’s entirely missing in one response, even
-after Fix 3’s name fix
+response, even after Fix 3’s name fix (found from the `obus` side,
+2026-07-21; applied here 2026-07-22, `einar_dev/age-na-string-coercion`)
 
 **Distinct from Fix 3.** Fix 3 stops the `xsi:nil` *attribute* leaking
 into the column *name*. This is a separate bug in the column’s *value*,
@@ -248,15 +268,16 @@ real value to pull the column’s inferred type toward numeric).
     guard fails, and the whole column is left `character`, with the
     literal text `"NA"` in every cell.
 
-**Reproduce:**
+**Reproduce (pre-fix behaviour):**
 
 ``` r
 
 d <- getIndices(survey = "NS-IBTS", year = 1965, quarter = 1, species = 126417,
                 fix_types = TRUE, new_names = TRUE)
 sapply(d[grep("^Age_", names(d))], class)
-# Age_0-5 numeric/integer (real catch at those ages here); Age_6-15 character,
-# holding the literal string "NA"
+# before the fix: Age_0-5 numeric/integer (real catch at those ages here); Age_6-15
+# character, holding the literal string "NA". After the fix (verified live): all 16
+# Age_0..Age_15 columns come back numeric/integer, none character.
 ```
 
 **Impact:** affects every function going through
@@ -273,12 +294,12 @@ parquet archive of
 [`getIndices()`](https://einarhjorleifsson.github.io/icesDatras/reference/getIndices.md)
 output.
 
-**Suggested fix:** in `parseDatras()`, either encode a missing value as
-an empty string instead of the literal text `"NA"` (consistent with the
-existing `""` → `NA` handling two lines later), or explicitly add
-`x[x == "NA"] <- NA` alongside the existing `-9`/`""` normalization.
-Either removes the count mismatch that defeats `simplify()`’s
-numeric-conversion check.
+**Fix applied:** in `parseDatras()`, the self-closing-tag expansion now
+produces empty content instead of the literal text `"NA"` (the first of
+the two options above), so the existing `x[x == ""] <- NA` normalisation
+catches it — for every column type, not just numeric ones. Also
+confirmed live: declared-character columns (e.g. `StatRec`) had the
+identical gap and are now covered too, not just `Age_*`.
 
 **Full writeup with commit-pinned citations against both this fork and
 upstream:**

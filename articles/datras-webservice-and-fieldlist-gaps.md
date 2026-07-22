@@ -103,14 +103,14 @@ data model has inconsistencies *across* HH/HL/CA/FL/LT/Indices/CPUE\* –
 in both naming conventions and typing – that a client library has no
 business trying to resolve on its own.
 
-A broader, separate investigation (comparing this package against
-`{DATRAS}`, `{DATRASextra}`, and other independent DATRAS consumers
-directly) landed on a useful distinction: HH/HL/CA are institute
-*measurements* – interpreting them (units, codes, key uniqueness,
-naming) has exactly one right answer, so every downstream tool solving
-that independently is waste, not legitimate scientific difference.
-Derived products (FL, indices, spread models) are a different case and
-can legitimately diverge – that’s normal practice, not a bug.
+A broader, separate investigation comparing several independent
+DATRAS-consuming tools directly landed on a useful distinction: HH/HL/CA
+are institute *measurements* – interpreting them (units, codes, key
+uniqueness, naming) has exactly one right answer, so every downstream
+tool solving that independently is waste, not legitimate scientific
+difference. Derived products (FL, indices, spread models) are a
+different case and can legitimately diverge – that’s normal practice,
+not a bug.
 
 Two concrete cases from that investigation bear directly on this
 package:
@@ -169,30 +169,67 @@ above.
 
 ## Steps used to find and confirm each gap
 
-The method was the same each time, and is worth naming as a repeatable
-recipe rather than a one-off:
+The method was the same each time. Code, not just a description of it –
+each of these ran against real DATRAS data during this investigation.
 
-1.  **Fetch real data, compare column names against the field list
-    directly.** For each record type, pull a live response and check
-    `setdiff(names(response), union(field_list$FieldNameOld, field_list$FieldName))`
-    for that `RecordHeader`. Anything left over has no entry at all –
-    this is what surfaced the CA `Age` gap, and confirmed it was the
-    *only* such gap across HH/HL/CA/FL/LT for the survey/ quarter
-    checked.
-2.  **Repeat with `new_names = FALSE`** specifically, to localise
-    *where* a gap sits. If the raw, untranslated response already uses a
-    name absent from the field list’s `FieldNameOld` column, the field
-    list’s metadata is wrong or incomplete – not a translation bug in
-    this package.
-3.  **Where a real “new headers” endpoint exists, cross-check against it
-    directly** rather than trusting this package’s own translation as
-    ground truth. This is what caught the `aphia`/`Valid_Aphia`
-    divergence – without a second, independent source for what ICES
-    actually calls a field, a locally-invented name can look correct
-    indefinitely.
-4.  **Treat every fix found this way as interim, not final.** The field
-    list is ICES’s data, not this package’s – a patch here corrects the
-    symptom for this package’s users, but the underlying gap still needs
-    reporting to ICES Datacenter directly (a different channel to
-    whoever maintains the `icesDatras` R package code on GitHub – not
-    yet identified as of writing).
+**1. Fetch real data, compare column names against the field list
+directly.**
+
+``` r
+
+fl <- getDatrasFieldList()
+ca <- getDATRAS("CA", "NS-IBTS", 2022, 1, fix_types = FALSE, new_names = FALSE)
+
+known <- unique(c(fl$FieldNameOld[fl$RecordHeader == "CA"],
+                   fl$FieldName[fl$RecordHeader == "CA"]))
+setdiff(names(ca), known)
+#> [1] "Age"
+```
+
+Repeated across HH/HL/CA/FL/LT for the same survey/quarter, `"Age"` in
+CA was the *only* column left over with no field-list entry at all –
+everything else already had one.
+
+**2. Repeat with `new_names = FALSE` specifically**, to localise *where*
+a gap actually sits.
+
+``` r
+
+"Age" %in% names(getDATRAS("CA", "NS-IBTS", 2022, 1, new_names = TRUE))
+#> [1] TRUE
+"Age" %in% names(getDATRAS("CA", "NS-IBTS", 2022, 1, new_names = FALSE))
+#> [1] TRUE
+```
+
+Same result either way. If the raw, untranslated response already uses a
+name absent from the field list’s `FieldNameOld` column, the field
+list’s metadata is what’s wrong – not a translation bug in this package.
+
+**3. Where a real “new headers” endpoint exists, cross-check against it
+directly** rather than trusting this package’s own translation as ground
+truth.
+
+``` r
+
+url_new <- paste0(
+  "https://datras.ices.dk/WebServices/DATRASWebService.asmx/getHLdataNewHeaders",
+  "?survey=NS-IBTS&year=2022&quarter=1"
+)
+new_headers   <- parseDatras(readDatras(url_new))
+hl_translated <- getDATRAS("HL", "NS-IBTS", 2022, 1, fix_types = FALSE, new_names = TRUE)
+
+setdiff(names(new_headers), names(hl_translated))
+#> [1] "Valid_Aphia"    # ICES's real endpoint still uses this name...
+setdiff(names(hl_translated), names(new_headers))
+#> [1] "aphia"          # ...but this package had invented a different one
+```
+
+Without a second, independent source for what ICES actually calls a
+field, a locally-invented name can look correct indefinitely.
+
+**4. Treat every fix found this way as interim, not final.** The field
+list is ICES’s data, not this package’s – a patch here corrects the
+symptom for this package’s users, but the underlying gap still needs
+reporting to ICES Datacenter directly (a different channel to whoever
+maintains the `icesDatras` R package code on GitHub – not yet identified
+as of writing).
