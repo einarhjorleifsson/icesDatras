@@ -180,7 +180,13 @@ applyDatrasTypeSchema <- function(df, record = NULL) {
   df[char_cols] <- lapply(df[char_cols], as.character)
   df[int_cols]  <- lapply(df[int_cols], as.integer)
   df[dbl_cols]  <- lapply(df[dbl_cols], as.numeric)
-  
+
+  # Scrub -9 sentinel → NA for numeric columns.
+  # parseDatras() already catches the string "-9", but formats like "-9.0"
+  # survive simplify() as numeric -9 and must be caught here.
+  df[int_cols] <- lapply(df[int_cols], function(x) replace(x, !is.na(x) & x == -9L, NA_integer_))
+  df[dbl_cols] <- lapply(df[dbl_cols], function(x) replace(x, !is.na(x) & x == -9,  NA_real_))
+
   df
 }
 
