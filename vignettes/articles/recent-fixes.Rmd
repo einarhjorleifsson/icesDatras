@@ -135,10 +135,62 @@ Applying the "obvious" fix now would have *broken* current and future data while
 helping historical records. Conclusion: a data bug, time-bounded and already resolved,
 not a `getCatchWgt()` code bug. No change made.
 
-## What's next
+## Branch structure
 
-Two of the fixes above map directly onto an issue already filed upstream by the same
-author: [#48](https://github.com/ices-tools-prod/icesDatras/issues/48) (fixes 3 and 4).
-[#47](https://github.com/ices-tools-prod/icesDatras/issues/47) is adjacent to the
-field-list gaps in fix 5. Whether/when to send any of this as pull requests to
-`ices-tools-prod/icesDatras` is a separate, unhurried decision.
+Each fix above landed on its own short-lived branch (`einar_dev/sentinel-scrub`,
+`einar_dev/xsi-nil-colname-leak`, `einar_dev/empty-result-consistency`,
+`einar_dev/age-na-string-coercion`, `einar_dev/fieldlist-webserver-gaps`), verified
+live, then merged into a single trunk, `einar_dev/integration`. `master` was left
+untouched throughout -- deliberately, so it stays a clean, minimal-diff mirror of
+upstream (currently exactly one commit ahead) rather than accumulating in-progress
+work. The trunk is named `einar_dev/integration` rather than plain `einar_dev` for a
+mechanical reason: git can't have a branch called `einar_dev` and branches called
+`einar_dev/<something>` coexist -- the ref namespace collides -- so the trunk needed
+its own leaf name within that namespace.
+
+Branches were also built sequentially (each one off the *latest* `einar_dev/integration`
+tip, not off a shared stale point), so the result is one linear chain rather than a
+diverging tree. That was a deliberate choice too: three of the fixes touch
+`R/utilities.R` and two touch `R/getCatchWgt.R`, and building them one at a time
+against an up-to-date trunk avoided any multi-way merge conflicts between fixes that
+shared a file.
+
+None of this branch structure is expected to matter to, or be visible to, anyone
+outside this fork -- it's a working method, not something upstream would ever see or
+need to care about.
+
+## Communication plan with ices-tools-prod
+
+This fork and upstream are handled under deliberately different rules. The fork itself
+is full autonomy: push or merge here freely, no CI to wait on, no need to coordinate
+with anyone. Upstream is a real maintainer's repository, shared with everyone else who
+depends on the package -- pacing and consideration apply *there*, not here.
+
+The intended loop, per bug, is:
+
+1. Check upstream's existing issues first, including under this author's own username,
+   before filing anything new. This already paid off directly: issues
+   [#46](https://github.com/ices-tools-prod/icesDatras/issues/46),
+   [#47](https://github.com/ices-tools-prod/icesDatras/issues/47), and
+   [#48](https://github.com/ices-tools-prod/icesDatras/issues/48) turned out to already
+   describe exactly what surfaced independently while building fixes 3, 4, and 5 above.
+2. File a new upstream issue *before* writing a fix, but only if nothing already covers
+   it -- cheap for the maintainer to read, and doesn't block starting the fix here in
+   parallel.
+3. Fix it here regardless of upstream's pace, merge to this fork's own trunk.
+4. Closing the loop upstream is a separate, later, deliberate step: a comment plus
+   manual close on an existing issue (merging into this fork does not auto-close a
+   different repo's issue), or eventually an actual pull request.
+5. Sending pull requests specifically should be paced, not fired all at once, and
+   grouped by logical fix rather than by file -- fixes 3 and 4 above touch the same file
+   but are unrelated stories and would stay separate PRs, for instance.
+
+As of writing, nothing has been sent upstream at all: no PR opened, no issue comments
+posted, nothing beyond the four fixes and one investigation staying inside this fork's
+own `einar_dev/integration`. That's by design at this stage, not an oversight. Evidence
+on how upstream tends to move, gathered via the GitHub API rather than assumed: zero
+open PRs at the time of writing, recent (2026) PRs merged within hours to about two
+weeks, a few small older PRs sat roughly two months before a batch merge, and some
+plain issues with no PR attached have sat open for years (e.g. #26, filed 2019) --
+not glacially slow, but no fixed turnaround either, which is the reason for pacing
+deliberately rather than sending everything at once.
