@@ -132,6 +132,52 @@ getDatrasFieldList <- function() {
     )
     out <- rbind(out, db_extra)
 
+    # Indices/CPUELength/CPUEAge: these three functions have NO RecordHeader at all
+    # in the upload-spec field list -- getIndices()/getCPUELength()/getCPUEAge() call
+    # formatDatras() without a `record` argument, so applyDatrasTypeSchema() matches
+    # against the WHOLE pooled list regardless of RecordHeader label used here.
+    # Self-mapped (FieldName == FieldNameOld) throughout: unlike HH/HL/CA/FL/LT, ICES
+    # has never defined an old/new naming pair for these fields, so inventing one
+    # would repeat the same mistake already corrected for "aphia" above. RecordHeader
+    # values ("IDX"/"CPUEL"/"CPUEA") are this repo's own organisational labels, not
+    # anything ICES defines -- picked to match the equivalent labels already used in
+    # obus's own hand-curated dictionary (`obus/data-raw/DATASET_lookup_fields.R`),
+    # which was consulted for the raw field names and formats below, cross-checked
+    # against live data before applying (2026-07-22). Confirmed live: without this,
+    # Age_0..Age_15 in getIndices()'s own output land as a mix of integer/numeric
+    # WITHIN one single response, not just across separate calls.
+    idx_cpue_extra <- data.frame(
+      RecordHeader = c(
+        rep("IDX", 3 + 16),
+        rep("CPUEL", 9),
+        rep("CPUEA", 6 + 16 + 1)
+      ),
+      FieldName = c(
+        # IDX
+        "AphiaID", "Species", "IndexArea", paste0("Age_", 0:15),
+        # CPUEL
+        "ShootLon", "DateTime", "Area", "SubArea", "AphiaID", "Species",
+        "LngtClas", "CPUE_number_per_hour", "Cal_DateID",
+        # CPUEA
+        "ShootLon", "DateTime", "Area", "SubArea", "AphiaID", "Species",
+        paste0("Age_", 0:15), "Cal_DateID"
+      ),
+      DataFormat = c(
+        # IDX
+        "int", "char", "char", rep("decimal", 16),
+        # CPUEL
+        "decimal", "char", "int", "char", "int", "char",
+        "int", "decimal", "int",
+        # CPUEA
+        "decimal", "char", "int", "char", "int", "char",
+        rep("decimal", 16), "int"
+      ),
+      Description = "",
+      stringsAsFactors = FALSE
+    )
+    idx_cpue_extra$FieldNameOld <- idx_cpue_extra$FieldName
+    out <- rbind(out, idx_cpue_extra)
+
     # Back-fill empty Descriptions for LT and FL rows from matching HH entries.
     hh_desc <- out[out$RecordHeader == "HH", c("FieldName", "Description")]
     for (rh in c("LT", "FL")) {

@@ -81,9 +81,19 @@ returns:
    touches this field (`getHLdataNewHeaders`) still calls it `Valid_Aphia`,
    unchanged -- so the invented name diverged from ICES's own actual direction, not
    from anything upstream chose.
+8. **Three entire products missing, not just a record type** -- `getIndices()`,
+   `getCPUELength()`, and `getCPUEAge()` have no field-list coverage at all, under
+   any `RecordHeader`. Bigger in scope than item 4 (FL is one record type with real
+   coverage in this fork's hot-fix; these three have none) and with a directly
+   confirmed consequence: `getIndices()`'s own `Age_0`..`Age_15` came back as a mix
+   of `integer`/`numeric` *within a single response*, not just across separate
+   calls, purely from `simplify()`'s data-dependent guessing having nothing to
+   anchor it to. Reported from a downstream project doing a full survey x year x
+   quarter archive -- exactly the scenario where per-file type drift turns into a
+   real, hard-to-debug problem once many files are bound together.
 
 Items 1-5 predate this session and originate from this fork's own hot-fix block, not
-from upstream; items 6-7 were found and patched here.
+from upstream; items 6-8 were found and patched here.
 
 ## Discrepancies across tables, not just within one
 

@@ -70,6 +70,32 @@ with a field-list correction (`FieldNameOld` for CA's `IndividualAge` row: `AgeR
 not the deeper `getDATRAS()` renaming surgery originally assumed here — needs confirming on the
 branch itself before assuming it's that simple.
 
+### 8. `getIndices()`/`getCPUELength()`/`getCPUEAge()` have no `RecordHeader` at all
+
+**Found 2026-07-22, reported from another project doing a full survey × year × quarter archive.**
+Unlike HH/HL/CA/FL/LT, these three functions' own output columns (`AphiaID`, `Species`,
+`IndexArea`, `Age_0`..`Age_15`, `ShootLon`, `DateTime`, `Area`, `SubArea`, `LngtClas`,
+`CPUE_number_per_hour`, `Cal_DateID`) have **no field-list entry under any `RecordHeader`** — not
+a wrong or missing row for an existing table, the table itself doesn't exist in the upstream
+list. All three functions call `formatDatras()` without a `record` argument, so every one of
+these columns fell through to `simplify()`'s data-dependent type guess.
+
+**Confirmed live, not hypothetical:** `getIndices()`'s own `Age_0`..`Age_15` came back as a mix
+of `integer`/`numeric` *within a single response* before this fix — exactly the cross-file type
+drift a per-call parquet archive would hit.
+
+**Fixed** by adding self-mapped (`FieldName == FieldNameOld`, no invented renames) rows under
+three organisational labels (`IDX`/`CPUEL`/`CPUEA` — this repo's own labels, not anything ICES
+defines; chosen to match the equivalent labels already used in `obus`'s own hand-curated
+dictionary, `obus/data-raw/DATASET_lookup_fields.R`, which was consulted for the raw field names
+and `DataFormat`s, cross-checked against live data before applying — not copied blind). Verified
+live: all three functions now show 0 untyped columns, and `Age_0`..`Age_15` are uniformly
+`numeric`.
+
+**This is still a quickfix, same as the rest of this hot-fix block** — the real, permanent
+answer is ICES's own field list covering these three products, not a client-side patch. Full
+writeup and upstream-facing framing: `vignettes/articles/datras-webservice-and-fieldlist-gaps.Rmd`.
+
 ## Local fixes applied (2026-07-06)
 
 Three bugs were fixed locally in `R/utilities.R` and `R/getDATRAS.R`. Each has a corresponding
