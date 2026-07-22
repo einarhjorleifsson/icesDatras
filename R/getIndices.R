@@ -35,13 +35,13 @@
 
 getIndices <- function(survey, year, quarter, species, fix_types = getOption("icesDatras.fix_types"), new_names = getOption("icesDatras.new_names")) {
   # check survey name
-  if (!checkSurveyOK(survey)) return(FALSE)
+  if (!checkSurveyOK(survey)) return(data.frame())
 
   # check year
-  if (!checkSurveyYearOK(survey, year, checksurvey = FALSE)) return(FALSE)
+  if (!checkSurveyYearOK(survey, year, checksurvey = FALSE)) return(data.frame())
 
   # check quarter
-  if (!checkSurveyYearQuarterOK(survey, year, quarter, checksurvey = FALSE, checkyear = FALSE)) return(FALSE)
+  if (!checkSurveyYearQuarterOK(survey, year, quarter, checksurvey = FALSE, checkyear = FALSE)) return(data.frame())
 
   # check species?
 

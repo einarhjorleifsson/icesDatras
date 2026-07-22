@@ -44,7 +44,7 @@ getDATRAS <- function(record = "HH", survey, years, quarters, species = NULL, fi
   }
 
   # check survey name
-  if (!checkSurveyOK(survey)) return(FALSE)
+  if (!checkSurveyOK(survey)) return(data.frame())
 
   # cross check available years with those requested
   available_years <- getSurveyYearList(survey)
@@ -53,7 +53,7 @@ getDATRAS <- function(record = "HH", survey, years, quarters, species = NULL, fi
     # all years are unavailable
     message("Supplied years (", paste(years, collapse = ", "), ") are not available.\n  Available options are:\n",
             paste(capture.output(print(available_years)), collapse = "\n"))
-    return(FALSE)
+    return(data.frame())
   } else if (length(available_years_req) < length(years)) {
     # some years are unavailable
     message("Some supplied years (", paste(setdiff(years, available_years), collapse = ", "),
@@ -71,7 +71,7 @@ getDATRAS <- function(record = "HH", survey, years, quarters, species = NULL, fi
     # all quarters are unavailable
     message("Supplied quarters (", paste(quarters, collapse = ", "), ") are not available.\n  Available options are:\n",
             paste(capture.output(print(mat)), collapse = "\n"))
-    return(FALSE)
+    return(data.frame())
   } else if (sum(mat[quarters,] == 0) > 0) {
     # some quarters are unavailable
     message("Some supplied quarter and year combinations are not available.")
@@ -108,6 +108,7 @@ getDATRAS <- function(record = "HH", survey, years, quarters, species = NULL, fi
                   parseDatras(x)
                 })
   out <- do.call(rbind, out)
+  if (is.null(out)) return(data.frame())
   out <- formatDatras(out, record = record,
                       new_names = new_names,
                       fix_types = fix_types)

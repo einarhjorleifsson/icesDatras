@@ -40,6 +40,13 @@ getCatchWgt <- function(survey, years, quarters, aphia, fix_types = getOption("i
   hh <- getDATRAS("HH", survey, years, quarters, new_names = FALSE, fix_types = FALSE)
   hl <- getDATRAS("HL", survey, years, quarters, new_names = FALSE, fix_types = FALSE)
 
+  # getDATRAS() returns an empty data.frame() (no columns) for an unavailable
+  # survey/year/quarter combination; the column-dependent processing below
+  # would error rather than degrade gracefully, so short-circuit here.
+  if (!is.data.frame(hh) || nrow(hh) == 0 || !is.data.frame(hl) || nrow(hl) == 0) {
+    return(data.frame())
+  }
+
   # process HL record
   ## add HaulID for later merging
   hh$HaulID <-
