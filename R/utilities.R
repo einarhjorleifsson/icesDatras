@@ -53,8 +53,8 @@ parseDatras <- function(x) {
   # exit if no data is being returned
   if (length(x) == 0) return(NULL)
 
-  # match content of first <tag>
-  names_x <- gsub(" *<(.*?)>.*", "\\1", x[1:ncol])
+  # match content of first <tag>, ignoring any XML attributes (e.g. xsi:nil="true")
+  names_x <- gsub(" *<([^ >]+)[^>]*>.*", "\\1", x[1:ncol])
 
   # delete all <tags>
   x <- gsub(" *<.*?>", "", x)
