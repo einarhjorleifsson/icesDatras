@@ -34,7 +34,8 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/datras-webservice-and-fieldlist-gaps.html">DATRAS Webservice and Field-List Gaps</a></li>
-    <li><a class="dropdown-item" href="../articles/recent-fixes.html">Recent Fixes and Field-List Corrections</a></li>
+    <li><a class="dropdown-item" href="../articles/other-upstream-issues.html">Other Upstream Issues, Checked Against Current Code</a></li>
+    <li><a class="dropdown-item" href="../articles/recent-fixes.html">Code Fixes: einar_dev/integration vs. master</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -82,18 +83,31 @@ under.</p>
 different in kind: one is missing behaviour on ICES’s server, the other
 is missing or wrong metadata <em>about</em> behaviour that already works
 fine.</p>
+<p><strong>That distinction has a practical consequence worth stating
+plainly, since it determines where any of this can actually go.</strong>
+A genuine <code>icesDatras</code> code bug – the other article’s
+territory – has somewhere to be reported:
+<code>ices-tools-prod/icesDatras</code>’s own issue tracker, with a real
+maintainer reading it. Nothing in <em>this</em> article does. There is
+no GitHub repo for “the DATRAS webservice” or “the DATRAS data model” –
+these are ICES Datacenter’s own server and database, not a piece of
+open-source code with an issue tracker attached. Reporting anything here
+means finding the right contact at ICES Datacenter directly (not yet
+identified as of writing, see <code>AGENTS.md</code>), or raising it
+with a relevant ICES Working Group (IBTSWG has been suggested elsewhere
+for related data-model questions) – not filing a GitHub issue and
+waiting for a response.</p>
 </div>
 <div class="section level2">
 <h2 id="the-webservice-itself-is-incomplete">The webservice itself is incomplete<a class="anchor" aria-label="anchor" href="#the-webservice-itself-is-incomplete"></a>
 </h2>
 <p>The DATRAS webservice
 (<code>https://datras.ices.dk/WebServices/DATRASWebService.asmx</code>)
-exposes 25 operations in total (checked live, 2026-07-22). ICES is
-evidently mid-migration on header naming for at least one record type:
-<code>getHLdata</code> has a sibling, <code>getHLdataNewHeaders</code>,
-returning the same data under updated column names. But that’s the
-<em>only</em> such pair – there is no <code>getHHdataNewHeaders</code>,
-<code>getCAdataNewHeaders</code>,
+exposes 25 operations in total. ICES is evidently mid-migration on
+header naming for at least one record type: <code>getHLdata</code> has a
+sibling, <code>getHLdataNewHeaders</code>, returning the same data under
+updated column names. But that’s the <em>only</em> such pair – there is
+no <code>getHHdataNewHeaders</code>, <code>getCAdataNewHeaders</code>,
 <code>getDatrasFieldListNewHeaders</code>, or equivalent for FL, LT,
 Indices, or either CPUE endpoint. The migration, in other words, is real
 but only about 4% rolled out across the service’s surface.</p>
@@ -158,18 +172,29 @@ name (<code>IndividualAge</code>) nor its documented old name
 <li>
 <strong>A locally-invented name diverging from ICES’s own real
 direction</strong> – this is not something
-<code>ices-tools-prod/icesDatras</code> (upstream, the “mother repo”)
-ever did: the official field list has no entry for this column at all.
-This <em>fork’s</em> own local hot-fix block had filled that gap by
-translating <code>Valid_Aphia</code> to a made-up canonical name,
+<code>ices-tools-prod/icesDatras</code> (the actual upstream repository)
+ever did: the official field list has no entry for this column at all. A
+local patch in this fork had filled that gap by translating
+<code>Valid_Aphia</code> to a made-up canonical name,
 <code>aphia</code>. The one place ICES’s real header migration touches
 this field (<code>getHLdataNewHeaders</code>) still calls it
 <code>Valid_Aphia</code>, unchanged – so the invented name diverged from
 ICES’s own actual direction, not from anything upstream chose.</li>
+<li>
+<strong>Three entire products missing, not just a record
+type</strong> – <code><a href="../reference/getIndices.html">getIndices()</a></code>, <code><a href="../reference/getCPUELength.html">getCPUELength()</a></code>,
+and <code><a href="../reference/getCPUEAge.html">getCPUEAge()</a></code> have no field-list coverage at all, under
+any <code>RecordHeader</code>. Bigger in scope than item 4 (FL is one
+record type with real coverage in this fork’s patch; these three have
+none) and with a directly confirmed consequence:
+<code><a href="../reference/getIndices.html">getIndices()</a></code>’s own <code>Age_0</code>..<code>Age_15</code>
+came back as a mix of <code>integer</code>/<code>numeric</code>
+<em>within a single response</em>, not just across separate calls,
+purely from <code>simplify()</code>’s data-dependent guessing having
+nothing to anchor it to – exactly the scenario where per-file type drift
+turns into a real, hard-to-debug problem once many files from many calls
+are bound together.</li>
 </ol>
-<p>Items 1-5 predate this session and originate from this fork’s own
-hot-fix block, not from upstream; items 6-7 were found and patched
-here.</p>
 </div>
 <div class="section level2">
 <h2 id="discrepancies-across-tables-not-just-within-one">Discrepancies across tables, not just within one<a class="anchor" aria-label="anchor" href="#discrepancies-across-tables-not-just-within-one"></a>
@@ -179,35 +204,86 @@ incomplete. A related, likely larger issue sits one level up: ICES’s own
 data model has inconsistencies <em>across</em>
 HH/HL/CA/FL/LT/Indices/CPUE* – in both naming conventions and typing –
 that a client library has no business trying to resolve on its own.</p>
-<p>A broader, separate investigation (comparing this package against
-<code>{DATRAS}</code>, <code>{DATRASextra}</code>, and other independent
-DATRAS consumers directly) landed on a useful distinction: HH/HL/CA are
-institute <em>measurements</em> – interpreting them (units, codes, key
-uniqueness, naming) has exactly one right answer, so every downstream
-tool solving that independently is waste, not legitimate scientific
-difference. Derived products (FL, indices, spread models) are a
-different case and can legitimately diverge – that’s normal practice,
+<p>A broader, separate investigation comparing several independent
+DATRAS-consuming tools directly landed on a useful distinction: HH/HL/CA
+are institute <em>measurements</em> – interpreting them (units, codes,
+key uniqueness, naming) has exactly one right answer, so every
+downstream tool solving that independently is waste, not legitimate
+scientific difference. Derived products (FL, indices, spread models) are
+a different case and can legitimately diverge – that’s normal practice,
 not a bug.</p>
-<p>Two concrete cases from that investigation bear directly on this
-package:</p>
+<p>Concrete cases bearing directly on this package:</p>
 <ul>
-<li>
-<strong>A value’s actual meaning sometimes depends on a different
-column, from a different table.</strong>
-<code>NumberAtLength</code>/<code>SpeciesCategoryWeight</code> in HL
-only mean something once joined against
-<code>DataType</code>/<code>HaulDuration</code> from HH – exactly the
-correction this package’s own <code><a href="../reference/getCatchWgt.html">getCatchWgt()</a></code> gets wrong for
-<code>DataType == "C"</code> (see the companion article).
-<code>LengthClass</code> similarly means nothing without its companion
-<code>LngtCode</code>.</li>
 <li>
 <strong>Old-name/new-name inconsistency</strong> was named,
 independently of anything in this package, as one of a handful of things
 every serious downstream DATRAS tool ends up re-solving on its own. This
 package’s own field-list hot-fix (documented above) is one instance of
 that pattern, not an isolated case.</li>
+<li>
+<strong>The same concept, spelled differently depending on which
+product returns it</strong> – distinct from old-name/new-name migration
+(that’s one table’s names changing over time; this is several tables
+disagreeing <em>right now</em>). Confirmed live, four cases, all
+involving item 8’s
+<code>IDX</code>/<code>CPUEL</code>/<code>CPUEA</code> columns against
+HH/HL/LT’s established names:
+<ul>
+<li>
+<code>Valid_Aphia</code> (HL/CA) vs. <code>AphiaID</code>
+(Indices/CPUE) – the same WoRMS species identifier.</li>
+<li>
+<code>ShootLong</code> (HH/LT) vs. <code>ShootLon</code> (CPUE) –
+the same shoot longitude.</li>
+<li>
+<code>DateofCalculation</code> (HH/HL/CA/FL/LT)
+vs. <code>Cal_DateID</code> (CPUE) – the same recalculation-timestamp
+concept.</li>
+<li>
+<code>LngtClass</code> (HL’s own old name) vs. <code>LngtClas</code>
+(CPUE) – the same length class.</li>
 </ul>
+Each pair is one keystroke or one naming pattern apart – consistent with
+the derived products (Indices, CPUE) having been built separately from
+the core HH/HL/CA tables, by a different process, without the two ever
+being reconciled. Deliberately left as separate, self-mapped entries in
+this fork’s field-list patch rather than unified locally – doing that
+would be this package quietly deciding they’re identical on ICES’s
+behalf, the same overreach the <code>aphia</code> naming mistake (item
+7) already was once.</li>
+<li>
+<strong>HL and CA diverge in <em>both</em> directions on the same
+two concepts, confirmed live.</strong> Sex: both share the identical old
+name <code>Sex</code>, but the new-name convention gives them
+<em>different</em> names – <code>SpeciesSex</code> (HL)
+vs. <code>IndividualSex</code> (CA). Unlike the item above, this one may
+not be carelessness: HL’s sex is assessed by visual bulk-catch
+examination, CA’s by dissection – genuinely different methods, so the
+shared old name <code>Sex</code> may be the misleading part, not the
+diverging new names. Number-at-length runs the opposite way: the new
+names already converge on one shared name, <code>NumberAtLength</code>,
+for both HL and CA, but the <em>old</em> names are table-prefixed and
+differ (<code>HLNoAtLngt</code> vs. <code>CANoAtLngt</code>) – mostly
+harmless once <code>new_names = TRUE</code> is used, but a trap for
+anyone working with raw old-style names across both tables.</li>
+<li>
+<strong>The same field name, but a different value encoding, across
+tables – arguably the most dangerous kind, since nothing about the
+column name signals it.</strong> <code>DateofCalculation</code> exists,
+identically named, in HH/HL/CA/FL/LT, but the digit order differs: HH’s
+live values (e.g. <code>20260625</code>) are <code>YYYYMMDD</code>,
+while FL’s (e.g. <code>20232303</code>, <code>20233003</code>) are only
+valid at all as <code>YYYYDDMM</code> – read as <code>YYYYMMDD</code>
+they’d claim months 23 and 30 exist. Confirmed directly against live
+data, not just cited.</li>
+</ul>
+<p>All of this is exactly the kind of thing that turns invisible the
+moment work stays within one table, one survey, one point in time – and
+turns into silent, wrong answers the moment it doesn’t: joining across
+tables, comparing across surveys, or building an archive across years
+are precisely where a shared name masking two methods, or a diverging
+name masking one concept, or an identical name masking two date formats,
+actually bites.</p>
 <p>None of this is fixable by patching <code>icesDatras</code>. A
 client-side patch can only ever correct the symptom for this package’s
 own users – the actual fix is ICES settling on one answer at the
@@ -250,38 +326,57 @@ distinct from the naming/typing gaps above.</p>
 <div class="section level2">
 <h2 id="steps-used-to-find-and-confirm-each-gap">Steps used to find and confirm each gap<a class="anchor" aria-label="anchor" href="#steps-used-to-find-and-confirm-each-gap"></a>
 </h2>
-<p>The method was the same each time, and is worth naming as a
-repeatable recipe rather than a one-off:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Fetch real data, compare column names against the field list
-directly.</strong> For each record type, pull a live response and check
-<code>setdiff(names(response), union(field_list$FieldNameOld, field_list$FieldName))</code>
-for that <code>RecordHeader</code>. Anything left over has no entry at
-all – this is what surfaced the CA <code>Age</code> gap, and confirmed
-it was the <em>only</em> such gap across HH/HL/CA/FL/LT for the survey/
-quarter checked.</li>
-<li>
-<strong>Repeat with <code>new_names = FALSE</code></strong>
-specifically, to localise <em>where</em> a gap sits. If the raw,
-untranslated response already uses a name absent from the field list’s
-<code>FieldNameOld</code> column, the field list’s metadata is wrong or
-incomplete – not a translation bug in this package.</li>
-<li>
-<strong>Where a real “new headers” endpoint exists, cross-check
+<p>The method is the same each time, and reproducible directly – code,
+not just a description of it. Each of these runs against real DATRAS
+data as shown.</p>
+<p><strong>1. Fetch real data, compare column names against the field
+list directly.</strong></p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDatrasFieldList.html">getDatrasFieldList</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, fix_types <span class="op">=</span> <span class="cn">FALSE</span>, new_names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">known</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">fl</span><span class="op">$</span><span class="va">FieldNameOld</span><span class="op">[</span><span class="va">fl</span><span class="op">$</span><span class="va">RecordHeader</span> <span class="op">==</span> <span class="st">"CA"</span><span class="op">]</span>,</span>
+<span>                   <span class="va">fl</span><span class="op">$</span><span class="va">FieldName</span><span class="op">[</span><span class="va">fl</span><span class="op">$</span><span class="va">RecordHeader</span> <span class="op">==</span> <span class="st">"CA"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">ca</span><span class="op">)</span>, <span class="va">known</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Age"</span></span></code></pre></div>
+<p>Repeated across HH/HL/CA/FL/LT for the same survey/quarter,
+<code>"Age"</code> in CA was the <em>only</em> column left over with no
+field-list entry at all – everything else already had one.</p>
+<p><strong>2. Repeat with <code>new_names = FALSE</code>
+specifically</strong>, to localise <em>where</em> a gap actually
+sits.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="st">"Age"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, new_names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="st">"Age"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"CA"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, new_names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Same result either way. If the raw, untranslated response already
+uses a name absent from the field list’s <code>FieldNameOld</code>
+column, the field list’s metadata is what’s wrong – not a translation
+bug in this package.</p>
+<p><strong>3. Where a real “new headers” endpoint exists, cross-check
 against it directly</strong> rather than trusting this package’s own
-translation as ground truth. This is what caught the
-<code>aphia</code>/<code>Valid_Aphia</code> divergence – without a
-second, independent source for what ICES actually calls a field, a
-locally-invented name can look correct indefinitely.</li>
-<li>
-<strong>Treat every fix found this way as interim, not
+translation as ground truth.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">url_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>  <span class="st">"https://datras.ices.dk/WebServices/DATRASWebService.asmx/getHLdataNewHeaders"</span>,</span>
+<span>  <span class="st">"?survey=NS-IBTS&amp;year=2022&amp;quarter=1"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">new_headers</span>   <span class="op">&lt;-</span> <span class="fu">parseDatras</span><span class="op">(</span><span class="fu">readDatras</span><span class="op">(</span><span class="va">url_new</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">hl_translated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDATRAS.html">getDATRAS</a></span><span class="op">(</span><span class="st">"HL"</span>, <span class="st">"NS-IBTS"</span>, <span class="fl">2022</span>, <span class="fl">1</span>, fix_types <span class="op">=</span> <span class="cn">FALSE</span>, new_names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">new_headers</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hl_translated</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Valid_Aphia"    # ICES's real endpoint still uses this name...</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hl_translated</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">new_headers</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "aphia"          # ...but this package had invented a different one</span></span></code></pre></div>
+<p>Without a second, independent source for what ICES actually calls a
+field, a locally-invented name can look correct indefinitely.</p>
+<p><strong>4. Treat every fix found this way as interim, not
 final.</strong> The field list is ICES’s data, not this package’s – a
 patch here corrects the symptom for this package’s users, but the
 underlying gap still needs reporting to ICES Datacenter directly (a
 different channel to whoever maintains the <code>icesDatras</code> R
-package code on GitHub – not yet identified as of writing).</li>
-</ol>
+package code on GitHub – not yet identified as of writing).</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
