@@ -26,6 +26,8 @@
 - [`getDatrasFieldList()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasFieldList.md)
   : Get Datras field list with column classes and mapping to old naming
   schema
+- [`getDatrasSchema()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasSchema.md)
+  : Get the DATRAS field/type schema
 - [`getDatrasUnaggregated()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasUnaggregated.md)
   : Download unaggregated DATRAS survey data
 - [`getFlexFile()`](https://einarhjorleifsson.github.io/icesDatras/reference/getFlexFile.md)
