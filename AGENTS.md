@@ -1159,6 +1159,49 @@ are still genuinely fixed in the installed package — a real
 `getIndices("NS-IBTS", 1965, 1, 126417, ...)` pull came back with clean
 names and uniformly numeric `Age_*` columns.
 
+**Update (2026-07-24) — the “should `datras_schema` be exported?”
+question above is resolved, but not via the
+`usethis::use_data()`/`R/data.R` route that discussion assumed.** Added
+`getDatrasSchema(record = NULL)` (`R/utilities.R`, next to
+`filter_datras_schema()`) as a thin exported wrapper — `record = NULL`
+returns the full table (every RecordHeader, each row still labeled), a
+supplied `record` delegates to `filter_datras_schema()` itself.
+`datras_schema` stays internal (`R/sysdata.rda`, `internal = TRUE`);
+nothing added to `DESCRIPTION`, no new `R/data.R`. This sidesteps one
+concern raised above (the `LazyData`/`DESCRIPTION` side-effect) but not
+the other: the table is still evolving, so a future column change is
+exactly as much a breaking change through
+[`getDatrasSchema()`](https://einarhjorleifsson.github.io/icesDatras/reference/getDatrasSchema.md)’s
+return value as through a raw exported `data(datras_schema)` would have
+been. Verified live: `nrow(getDatrasSchema())` equals
+`nrow(getDatrasSchema(<all 8 RecordHeaders>))` at 304 (confirming
+HH/HL/CA/FL/LT/CPUEL/CPUEA/IDX are still the only RecordHeaders
+covered), and `getDatrasSchema("HH")` is
+[`identical()`](https://rdrr.io/r/base/identical.html) to
+`filter_datras_schema("HH")`.
+
+**A naming-resolution gap found while adding the export, not fixed,
+deliberately flagged instead of guessed at.** `IDX`’s `PlusGr` row
+already has a `Comment` (the icesVocab value-mismatch flag above) but
+that only covers the *type*/vocabulary question. A separate issue on the
+same row: under `new_names = TRUE`,
+[`getIndices()`](https://einarhjorleifsson.github.io/icesDatras/reference/getIndices.md)’s
+plus-group column now resolves to `PlusGr` (self-mapped), where it
+previously resolved to `AgePlusGroup`. Root cause: the `idx_cpue_extra`
+hard-coded block in `R/getDatrasFieldList.R` lists IDX’s own
+`AphiaID`/`Species`/`IndexArea`/ `Age_0`..`Age_15` but never
+`PlusGr`/`AgePlusGroup`, so `build_datras_schema.R`’s `fieldlist_match`
+join finds no match for this row and falls through to its self-map
+default (`FieldName <- FieldNameOld`). Unlike the
+`AphiaID`/`Valid_Aphia` type overrides elsewhere in that script — each
+with an explicit, live-verified `Comment` recording a deliberate choice
+— this rename reverted as a side effect of the migration, not a decision
+anyone made. Two options, neither applied: an override row back to
+`AgePlusGroup` if that’s still the intended public name, or a `Comment`
+documenting `PlusGr` as the now-intentional, corrected convention. Needs
+a human call on which name is actually right — recorded here so it isn’t
+lost once other work moves on, not acted on.
+
 ## Related project
 
 `/Users/einarhj/R/Pakkar/obus` — a separate project that consumes
