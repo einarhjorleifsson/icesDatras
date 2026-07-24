@@ -1,0 +1,207 @@
+---
+title: "Other Upstream Issues, Checked Against Current Code"
+output: rmarkdown::html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+## Why this exists
+
+Beyond the three issues covered in the [code
+fixes](recent-fixes.html) article, `ices-tools-prod/icesDatras` has a number of
+other issues, most closed, some open, going back years. This checks a
+representative set of them directly, against a clean copy of current `master` --
+not the fork, not assumptions -- to see which still apply and which have already
+been resolved some other way over time.
+
+Most of what follows is good news: issues that are old don't necessarily mean
+issues that are still broken.
+
+Draft follow-up comments for the three issues most directly resolved by this
+fork's own work are collected at the end, ready to copy into the actual GitHub
+issues when it's time to post them -- nothing here has been sent anywhere yet.
+
+## Already resolved -- confirmed, not assumed
+
+Six issues checked this way no longer reproduce at all on current `master`:
+
+- **["set variable type" (#45)](https://github.com/ices-tools-prod/icesDatras/issues/45)**
+  -- reported `bind_rows()` failing across two calls because `GearEx` came back
+  `character` in one and `integer` in the other. Re-running the exact reproduction
+  from the issue: both calls now return `GearEx` as `character`, and both `rbind()`
+  and `bind_rows()` succeed.
+- **["getCatchWgt error" (#37)](https://github.com/ices-tools-prod/icesDatras/issues/37)**
+  and **["getcatchWgt not working" (#36)](https://github.com/ices-tools-prod/icesDatras/issues/36)**
+  -- both reported a "duplicate 'row.names' are not allowed" crash for specific
+  survey/year/quarter/species combinations. Both exact reproductions now run
+  cleanly.
+- **["Wrongly identifying statsquare (StatRec) as integer" (#10)](https://github.com/ices-tools-prod/icesDatras/issues/10)**
+  and **["AreaCode format issue" (#30)](https://github.com/ices-tools-prod/icesDatras/issues/30)**
+  -- both about numeric-looking area codes (e.g. `44E3`) losing their letter
+  component when coerced to numeric. `StatRec` now comes back `character` as
+  expected; `simplify()` already excludes both `StatRec` and `AreaCode` from its
+  numeric-conversion pass.
+- **["White spaces in character strings" (#2)](https://github.com/ices-tools-prod/icesDatras/issues/2)**
+  -- reported trailing whitespace on character fields (`"GOV     "` instead of
+  `"GOV"`). `parseDatras()` already trims whitespace on every field; no trailing
+  spaces found on a live check.
+
+None of these need anything from this fork -- they were already fixed, just
+without an explanation of what changed attached to the closed issue.
+
+## Related to an issue, but not quite the same bug
+
+Two issues don't reproduce as originally reported, but each points at a real,
+still-open gap nearby that this fork hasn't resolved either.
+
+### ["get_datras_unaggregated_data(\"CA\", ...) issue" (#50)](https://github.com/ices-tools-prod/icesDatras/issues/50)
+
+The original report showed the first row of a `getDatrasUnaggregated("CA", ...)`
+call coming back as empty strings/`NA` across every column, with a stray
+byte-order-mark character contaminating the second row's `RecordHeader`. Re-running
+the exact reproduction: neither symptom appears -- the first rows are clean.
+
+But the same call still throws three warnings unrelated to that original report:
+
+```r
+getDatrasUnaggregated("CA", "NS-IBTS", "2025", "1")
+#> Warning: Column name 'ScientificName_WoRMS' (colClasses[[1]][26]) not found
+#> Warning: Column name 'NumberAtLength' (colClasses[[2]][6]) not found
+#> Warning: Column name 'ValidAphiaID' (colClasses[[2]][7]) not found
+```
+
+This function has its own, separate, hand-maintained column-type list
+(`.datras_column_classes()`) that doesn't go through `getDatrasFieldList()` at
+all -- and that list currently declares three columns that don't exist in the
+real downloaded data (under those exact names, at least). Harmless as a warning,
+but it confirms this list is out of sync with the actual current download-API
+schema. Not something this fork's field-list work touches -- that work is all on
+the SOAP-endpoint side, and this is a wholly separate code path.
+
+### ["a webservice bug to be fixed in icesDatras" (#28)](https://github.com/ices-tools-prod/icesDatras/issues/28)
+
+The original report: a self-closing tag with no space before the slash,
+`<Valid_Aphia/>`, wasn't recognised as a null field and became a malformed column.
+Re-running the exact historical query (NS-IBTS 1997 Q4) that the report used:
+`Valid_Aphia` now comes back as a perfectly clean column, last in the list --
+most likely because the underlying server response itself no longer emits that
+exact malformed tag for this query, not because any client-side code changed.
+
+The underlying gap in the code is still there, confirmed directly:
+
+```r
+gsub("^ *<(.*?) />$", "<\\1> NA </\\1>", "<Valid_Aphia/>")
+#> [1] "<Valid_Aphia/>"     # unchanged -- the regex requires a space before "/>"
+                            # and didn't match
+```
+
+This is a different regex from the one this fork's own fixes touch (those fix
+name-extraction when a tag *does* have attributes and a space; this is the
+separate self-closing-tag-detection step, which still only matches `<Tag />`,
+not `<Tag/>`). Currently latent rather than active -- nothing reproduces it live
+today -- but the code itself was never made robust to the no-space form, so it's
+one edge case away from resurfacing if a future response ever emits it again.
+
+## An open feature request, independently corroborated
+
+**["getSubmissionStatus_FishTrawlData" (#54)](https://github.com/ices-tools-prod/icesDatras/issues/54)**
+and its sibling **["getSubmissionStatus_LitterData" (#55)](https://github.com/ices-tools-prod/icesDatras/issues/55)**
+ask for wrapper functions around two DATRAS webservice operations this package
+doesn't currently expose at all. Confirmed directly: neither operation has any
+corresponding R function in this package, on either the fork or upstream --
+these are genuine, still-open gaps, not yet addressed anywhere.
+
+## Draft follow-up comments, ready to post
+
+The three issues below are the ones this fork's own work most directly resolves.
+Each draft is informative only -- sharing findings and evidence, not requesting
+anything or announcing a pull request -- and every code example has been checked
+against the current upstream `master` specifically, not the fork.
+
+### [#48 -- "getCPUELength - variable name returned"](https://github.com/ices-tools-prod/icesDatras/issues/48)
+
+> I've been digging into this one, both the column-name issue in the original
+> report and the `Age_6`-`Age_15` "NA"-string companion issue from my earlier
+> comment on this thread. Concrete repro against current `master`:
+>
+> ```r
+> d <- getIndices(survey = "NS-IBTS", year = 1965, quarter = 1, species = 126417,
+>                 fix_types = TRUE, new_names = TRUE)
+> grep("^Age", names(d), value = TRUE)
+> #>  [1] "AgePlusGroup"            "Age_0"                   "Age_1"
+> #>  [4] "Age_2"                   "Age_3"                   "Age_4"
+> #>  [7] "Age_5"                   "Age_6 xsi:nil=\"true\""  "Age_7 xsi:nil=\"true\""
+> #> [10] "Age_8 xsi:nil=\"true\""  "Age_9 xsi:nil=\"true\""  "Age_10 xsi:nil=\"true\""
+> #> [13] "Age_11 xsi:nil=\"true\"" "Age_12 xsi:nil=\"true\"" "Age_13 xsi:nil=\"true\""
+> #> [16] "Age_14 xsi:nil=\"true\"" "Age_15 xsi:nil=\"true\""
+>
+> sapply(d[grep("xsi:nil", names(d))], class)
+> # every one of these comes back "character", holding the literal text "NA" --
+> # not a true NA
+> ```
+>
+> Root causes, for anyone else hitting this:
+>
+> 1. **Column name leak**: `parseDatras()`'s name-extraction regex relies on a
+>    lazy quantifier (`(.*?)`) that isn't reliably supported across regex
+>    engines. When DATRAS returns a self-closing null field like
+>    `<Age_6 xsi:nil="true" />`, the regex captures the whole tag content as the
+>    column name instead of just `Age_6`.
+> 2. **The value-level companion bug**, one level deeper: the same self-closing
+>    tag handling turns the field into the literal text `"NA"`, not a true `NA`.
+>    `-9` and `""` are separately normalized to `NA` two lines later, but `"NA"`
+>    isn't, and `is.na("NA")` is `FALSE` -- so `simplify()`'s numeric-conversion
+>    guard gets fooled and leaves the whole column `character`.
+>
+> I've got fixes for both working in my own fork for now -- not filing a PR yet,
+> still want to shake a few things out -- but didn't want this to sit without
+> an update given it's been a while. Happy to open one when it's ready.
+
+### [#46 -- "on getCatchWgt"](https://github.com/ices-tools-prod/icesDatras/issues/46)
+
+> Sharing something I found while looking into this more closely, might help pin
+> down the actual scope of the question. Checked whether `DataType == "C"` hauls
+> still need a `HaulDuration/60`-style conversion before use, comparing median
+> catch-per-minute-towed by `DataType` (all species pooled, current `master`):
+>
+> ```r
+> # NS-IBTS 2020 Q1
+> #        C         P         R
+> # 142129.22  91843.43  66711.43     <- C median ~2.1x the R median
+>
+> # NS-IBTS 2024 Q1
+> #        C        P        R
+> # 128805.0 156413.4 133315.4        <- C and R medians ~1:1
+> ```
+>
+> So there's a real, measurable gap in 2020 that's gone by 2024. That lines up
+> with the package's own startup disclaimer ("known issues with the way
+> CatCatchWgt has been reported until 2023"), so this looks like a real but
+> time-bounded reporting-era issue on the data side, not something
+> `getCatchWgt()` itself needs to compensate for going forward. Happy to share
+> the full comparison script if useful.
+
+### [#47 -- "on getFlexFile"](https://github.com/ices-tools-prod/icesDatras/issues/47)
+
+> Noting something related while looking at a few of these functions together
+> -- `getCPUELength()` and `getCPUEAge()` have the same gap described here, a
+> bit worse. Checked against current `master`:
+>
+> ```r
+> "StNo" %in% names(getFlexFile("NS-IBTS", 2022, 1, new_names = FALSE))
+> #> [1] FALSE
+> "Country" %in% names(getFlexFile("NS-IBTS", 2022, 1, new_names = FALSE))
+> #> [1] TRUE
+>
+> "StNo" %in% names(getCPUELength("NS-IBTS", 2022, 1, new_names = FALSE))
+> #> [1] FALSE
+> "Country" %in% names(getCPUELength("NS-IBTS", 2022, 1, new_names = FALSE))
+> #> [1] FALSE     # getFlexFile at least keeps Country -- these two don't
+> ```
+>
+> Same result for `getCPUEAge()`. Might be worth folding into the same
+> discussion rather than a separate report -- looks like the same underlying
+> cause: these "derived product" endpoints don't carry the full haul-identifying
+> columns HH/HL do.

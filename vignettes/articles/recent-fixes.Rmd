@@ -1,5 +1,5 @@
 ---
-title: "Recent Fixes and Field-List Corrections"
+title: "Code Fixes: einar_dev/integration vs. master"
 output: rmarkdown::html_document
 ---
 
@@ -7,64 +7,43 @@ output: rmarkdown::html_document
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-## Why this exists
+## What this covers
 
-This fork (`einarhjorleifsson/icesDatras`) tracks
-[ices-tools-prod/icesDatras](https://github.com/ices-tools-prod/icesDatras) closely --
-as of writing, one commit ahead of upstream `master`. While using the package as a
-dependency of another project ([obus](https://github.com/einarhjorleifsson/obus)),
-several real, reproducible bugs surfaced. This article documents what was found, what
-was fixed, why -- and, just as importantly, one thing that looked like a bug but wasn't.
+Four fixes to this package's own R code, present on this fork's
+`einar_dev/integration` branch and not yet on `master`. Each is a genuine code bug:
+given the same values the DATRAS API already returns, the existing logic produced a
+result that contradicts a clear, well-defined convention -- fixable permanently in
+this package's own source, with no dependency on ICES's server ever changing.
 
-Everything here lives on `einar_dev/integration` in this fork, not yet on `master` and
-not yet proposed upstream. It's written up both as a personal reference and as a
-starting point should it be worth raising with the people maintaining the upstream
-repository.
+A related but separate class of finding -- gaps and inconsistencies in what ICES's
+own webservice and field list provide, not fixable by any change to this package's
+code -- is covered in a companion document, [DATRAS Webservice and Field-List
+Gaps](datras-webservice-and-fieldlist-gaps.html).
 
-## A three-way distinction that shaped what got "fixed" here
+## Fix 1 -- `-9` sentinel not fully scrubbed to `NA`
 
-Not every wrong-looking result is fixable the same way:
-
-- **Code bug** -- given the same values the DATRAS API already returns, a function's
-  own logic produces a result that contradicts a clear, well-defined convention.
-  Fixable permanently in this package's own R source.
-- **Data bug** -- the values themselves, as submitted to DATRAS, are wrong or
-  inconsistent regardless of what any client code does with them. Not fixable here at
-  all.
-- **Webserver/schema gap** -- ICES's own field-list webservice
-  (`getDatrasFieldList()`) is missing or wrong, even though the underlying survey data
-  is fine. Fixable here only as an interim, escapable patch -- the real fix belongs on
-  ICES's server.
-
-This distinction is what kept one investigation (below) from turning into an incorrect
-"fix."
-
-## Fixes
-
-### 1. `-9` sentinel not fully scrubbed to `NA`
-
-`applyDatrasTypeSchema()` coerced column types but never converted DATRAS's `-9`
-missing-value sentinel to `NA`. `parseDatras()` already caught the *string* `"-9"`, but
-not decimal forms like `"-9.0"` -- a valid representation DATRAS uses for missing float
-fields. After `simplify()` converts such a string to numeric, the value becomes `-9`
-and passed through unchanged.
+`applyDatrasTypeSchema()` coerces column types but never converted DATRAS's `-9`
+missing-value sentinel to `NA`. `parseDatras()` already catches the *string* `"-9"`,
+but not decimal forms like `"-9.0"` -- a valid representation DATRAS uses for
+missing float fields. After `simplify()` converts such a string to numeric, the
+value becomes `-9` and passes through unchanged.
 
 ```r
 x <- data.frame(HaulDur = -9)
 applyDatrasTypeSchema(x, record = "HH")$HaulDur
-#> [1] -9      # before the fix -- should be NA
+#> [1] -9      # before this fix -- should be NA
 ```
 
 **Fix:** explicit `-9`/`-9L` scrubbing added to `applyDatrasTypeSchema()` for all
 `int`/`decimal` columns, after type coercion.
 
-### 2. Empty or unavailable results returned `FALSE`/`NULL` instead of a data frame
+## Fix 2 -- Empty or unavailable results returned `FALSE`/`NULL` instead of a data frame
 
-`getDATRAS()`, `getFlexFile()`, `getLTassessment()`, `getIndices()`, and
-`getCatchWgt()` all had at least one path that returned a bare `FALSE` (an invalid
-survey name, an unavailable year/quarter) or, for `getDATRAS()`, silently returned
-`NULL` when an empty XML response collapsed via `do.call(rbind, .)`. Both break
-idiomatic downstream code:
+`getDATRAS()`, `getFlexFile()`, `getLTassessment()`, `getIndices()`,
+`getCatchWgt()`, `getCPUELength()`, and `getCPUEAge()` each had at least one path
+that returned a bare `FALSE` (an invalid survey name, an unavailable year/quarter)
+or silently returned `NULL` when an empty XML response collapsed before reaching
+`formatDatras()`. Both break idiomatic downstream code:
 
 ```r
 out <- getDATRAS("HH", "NS-IBTS", years = 1800, quarters = 1)
@@ -72,125 +51,68 @@ nrow(out)
 #> Error: argument is not a data frame
 ```
 
-**Fix:** every such early exit now returns `data.frame()`. `getCatchWgt()` needed a
-genuinely new guard -- it has no availability checks of its own, it inherits failure
-from two internal `getDATRAS()` calls, and would otherwise hard-error on
-column-dependent processing against an empty result.
+**Fix:** every such early exit now returns `data.frame()`. Two shapes of gap,
+covered differently:
 
-### 3. `xsi:nil` XML attribute leaking into column names
+- `getDATRAS()`/`getFlexFile()`/`getLTassessment()`/`getIndices()` had their own
+  `checkSurveyOK()`/`checkSurveyYearOK()`/`checkSurveyYearQuarterOK()` validation
+  already in place; only the early-exit return value needed changing.
+- `getCatchWgt()`, `getCPUELength()`, and `getCPUEAge()` have no such validation of
+  their own -- `getCatchWgt()` inherits failure from two internal `getDATRAS()`
+  calls and would otherwise hard-error on column-dependent processing against an
+  empty result; `getCPUELength()`/`getCPUEAge()` have only a
+  `checkDatrasWebserviceOK()` reachability check, so an unavailable cell hit the
+  `NULL`-propagation path in `parseDatras()` with nothing to catch it. Each needed
+  a genuinely new guard, not a mechanical substitution.
+
+## Fix 3 -- `xsi:nil` XML attribute leaking into column names
 
 DATRAS represents a missing field as a self-closing tag, e.g.
-`<Age_6 xsi:nil="true" />`. `parseDatras()`'s name-extraction regex relied on a lazy
-quantifier (`(.*?)`) that isn't reliably supported across regex engines, and captured
-the whole `Age_6 xsi:nil="true"` as the column name instead of `Age_6`.
+`<Age_6 xsi:nil="true" />`. `parseDatras()`'s name-extraction regex relied on a
+lazy quantifier (`(.*?)`) that isn't reliably supported across regex engines, and
+captured the whole `Age_6 xsi:nil="true"` as the column name instead of `Age_6`.
 
-**Fix:** replaced with `([^ >]+)[^>]*`, which stops the capture at the first space or
-`>` without relying on lazy-quantifier support. Verified live: all 16 `Age_0`-`Age_15`
-columns from a real `getIndices()` call now come back with clean names.
+**Fix:** replaced with `([^ >]+)[^>]*`, which stops the capture at the first space
+or `>` without relying on lazy-quantifier support. Verified live: all 16
+`Age_0`-`Age_15` columns from a real `getIndices()` call come back with clean
+names.
 
-### 4. Literal text `"NA"` surviving as a real, non-missing value
+## Fix 4 -- Literal text `"NA"` surviving as a real, non-missing value
 
 A deeper, separate bug in the same area: the self-closing-tag expansion in
-`parseDatras()` produced the *literal text* `"NA"` as the field's content, not a true
-`NA`. Two lines later, `-9` and `""` are explicitly normalised to `NA` -- but `"NA"`
-was never included, and `is.na("NA")` is `FALSE`, so `simplify()`'s numeric-conversion
-guard was fooled and left the whole column as `character`, holding the string `"NA"` in
-every affected cell.
+`parseDatras()` produced the *literal text* `"NA"` as the field's content, not a
+true `NA`. Two lines later, `-9` and `""` are explicitly normalised to `NA` -- but
+`"NA"` was never included, and `is.na("NA")` is `FALSE`, so `simplify()`'s
+numeric-conversion guard was fooled and left the whole column as `character`,
+holding the string `"NA"` in every affected cell.
 
 **Fix:** the tag expansion now produces empty content rather than the literal text
-`"NA"`, so the existing `x[x == ""] <- NA` normalisation catches it -- for every column
-type, not just numeric ones. This was a real gap beyond `Age_*`: declared-character
-columns got zero scrubbing either.
-
-### 5. Field-list webserver gaps (interim patches, not code bugs)
-
-Two corrections to `getDatrasFieldList()`'s existing hot-fix block, both examples of
-the third category above:
-
-- **`aphia` naming** -- the hot-fix had invented `aphia` as the "new" name for
-  `Valid_Aphia`. Cross-checked against ICES's own `getHLdataNewHeaders` endpoint (the
-  one place ICES is actively rolling out new header names) -- it still calls this
-  field `Valid_Aphia`, unchanged. Realigned to match ICES's actual direction rather
-  than this repo's own invention.
-- **CA `Age` gap** -- `getDATRAS("CA", ...)` returns a column literally named `Age`,
-  matching neither the field list's `IndividualAge` (new) nor `AgeRings` (old) -- even
-  with `new_names = FALSE`, confirming the raw server response itself uses `Age`.
-  Corrected the field list's `FieldNameOld` accordingly, the same pattern already used
-  for three analogous LT corrections.
+`"NA"`, so the existing `x[x == ""] <- NA` normalisation catches it -- for every
+column type, not just numeric ones. This is a real gap beyond `Age_*`:
+declared-character columns get zero scrubbing either.
 
 ## Investigated, not fixed: `getCatchWgt()` and `DataType == "C"`
 
 The most interesting negative result. `getCatchWgt()` never applies a
-`HaulDuration/60` scaling for `DataType == "C"` hauls -- initial evidence (2020 data)
-showed catch weights inflated by exactly that factor on affected hauls. This looked
-like a clean code bug.
+`HaulDuration/60` scaling for `DataType == "C"` hauls -- 2020 data showed catch
+weights inflated by exactly that factor on affected hauls. This looks like a clean
+code bug at first.
 
-But `R/zzz.R`'s own package-startup message already warns: *"there are known issues
-with the way CatCatchWgt has been reported until 2023."* That's ICES's own disclaimer,
-and it lines up: checking real NS-IBTS 2024 Q1 data, the median catch-per-minute-towed
-for `DataType == "C"` hauls is **~0.97x** the `DataType == "R"` rate -- not ~60x.
-Post-2023 submissions are already correctly per-haul.
+But `R/zzz.R`'s own package-startup message already warns: *"there are known
+issues with the way CatCatchWgt has been reported until 2023."* That's ICES's own
+disclaimer, and it lines up: real NS-IBTS 2024 Q1 data shows the median
+catch-per-minute-towed for `DataType == "C"` hauls at **~0.97x** the
+`DataType == "R"` rate -- not ~60x. Post-2023 submissions are already correctly
+per-haul.
 
-Applying the "obvious" fix now would have *broken* current and future data while only
-helping historical records. Conclusion: a data bug, time-bounded and already resolved,
-not a `getCatchWgt()` code bug. No change made.
+Applying the "obvious" fix now would *break* current and future data while only
+helping historical records. Conclusion: a data-reporting-era issue, time-bounded
+and already resolved on ICES's side, not a `getCatchWgt()` code bug. No change
+made.
 
-## Branch structure
+## Related upstream issues
 
-Each fix above landed on its own short-lived branch (`einar_dev/sentinel-scrub`,
-`einar_dev/xsi-nil-colname-leak`, `einar_dev/empty-result-consistency`,
-`einar_dev/age-na-string-coercion`, `einar_dev/fieldlist-webserver-gaps`), verified
-live, then merged into a single trunk, `einar_dev/integration`. `master` was left
-untouched throughout -- deliberately, so it stays a clean, minimal-diff mirror of
-upstream (currently exactly one commit ahead) rather than accumulating in-progress
-work. The trunk is named `einar_dev/integration` rather than plain `einar_dev` for a
-mechanical reason: git can't have a branch called `einar_dev` and branches called
-`einar_dev/<something>` coexist -- the ref namespace collides -- so the trunk needed
-its own leaf name within that namespace.
-
-Branches were also built sequentially (each one off the *latest* `einar_dev/integration`
-tip, not off a shared stale point), so the result is one linear chain rather than a
-diverging tree. That was a deliberate choice too: three of the fixes touch
-`R/utilities.R` and two touch `R/getCatchWgt.R`, and building them one at a time
-against an up-to-date trunk avoided any multi-way merge conflicts between fixes that
-shared a file.
-
-None of this branch structure is expected to matter to, or be visible to, anyone
-outside this fork -- it's a working method, not something upstream would ever see or
-need to care about.
-
-## Communication plan with ices-tools-prod
-
-This fork and upstream are handled under deliberately different rules. The fork itself
-is full autonomy: push or merge here freely, no CI to wait on, no need to coordinate
-with anyone. Upstream is a real maintainer's repository, shared with everyone else who
-depends on the package -- pacing and consideration apply *there*, not here.
-
-The intended loop, per bug, is:
-
-1. Check upstream's existing issues first, including under this author's own username,
-   before filing anything new. This already paid off directly: issues
-   [#46](https://github.com/ices-tools-prod/icesDatras/issues/46),
-   [#47](https://github.com/ices-tools-prod/icesDatras/issues/47), and
-   [#48](https://github.com/ices-tools-prod/icesDatras/issues/48) turned out to already
-   describe exactly what surfaced independently while building fixes 3, 4, and 5 above.
-2. File a new upstream issue *before* writing a fix, but only if nothing already covers
-   it -- cheap for the maintainer to read, and doesn't block starting the fix here in
-   parallel.
-3. Fix it here regardless of upstream's pace, merge to this fork's own trunk.
-4. Closing the loop upstream is a separate, later, deliberate step: a comment plus
-   manual close on an existing issue (merging into this fork does not auto-close a
-   different repo's issue), or eventually an actual pull request.
-5. Sending pull requests specifically should be paced, not fired all at once, and
-   grouped by logical fix rather than by file -- fixes 3 and 4 above touch the same file
-   but are unrelated stories and would stay separate PRs, for instance.
-
-As of writing, nothing has been sent upstream at all: no PR opened, no issue comments
-posted, nothing beyond the four fixes and one investigation staying inside this fork's
-own `einar_dev/integration`. That's by design at this stage, not an oversight. Evidence
-on how upstream tends to move, gathered via the GitHub API rather than assumed: zero
-open PRs at the time of writing, recent (2026) PRs merged within hours to about two
-weeks, a few small older PRs sat roughly two months before a batch merge, and some
-plain issues with no PR attached have sat open for years (e.g. #26, filed 2019) --
-not glacially slow, but no fixed turnaround either, which is the reason for pacing
-deliberately rather than sending everything at once.
+Two of the fixes above map directly onto an issue already open on
+`ices-tools-prod/icesDatras`: [#48](https://github.com/ices-tools-prod/icesDatras/issues/48)
+(fixes 3 and 4). The `getCatchWgt()` investigation above is directly relevant to
+[#46](https://github.com/ices-tools-prod/icesDatras/issues/46).

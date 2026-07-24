@@ -52,7 +52,8 @@ getIndices <- function(survey, year, quarter, species, fix_types = getOption("ic
       survey, year, quarter, species)
   out <- readDatras(url)
   out <- parseDatras(out)
-  out <- formatDatras(out, 
+  out <- formatDatras(out,
+                      record = "IDX",
                       fix_types = fix_types,
                       new_names = new_names)
 

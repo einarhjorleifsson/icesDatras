@@ -42,6 +42,7 @@ getCPUELength <- function(survey, year, quarter, fix_types = getOption("icesDatr
   out <- parseDatras(out)
   if (is.null(out)) return(data.frame())
   out <- formatDatras(out,
+                      record = "CPUEL",
                       fix_types = fix_types,
                       new_names = new_names)
 

@@ -1,0 +1,306 @@
+"RecordHeader","FieldNameOld","DescriptionNew"
+"CA","-",
+"CA","Age",
+"CA","AgePrepMet",
+"CA","AgeSource",
+"CA","AreaCode",
+"CA","AreaType",
+"CA","CANoAtLngt",
+"CA","Country",
+"CA","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"CA","DoorType",
+"CA","FishID",
+"CA","Gear",
+"CA","GearEx",
+"CA","GenSamp",
+"CA","HaulNo",
+"CA","IndWgt",
+"CA","LiverWeight",
+"CA","LngtClass",
+"CA","LngtCode",
+"CA","Maturity",
+"CA","MaturityScale",
+"CA","OtGrading",
+"CA","ParSamp",
+"CA","PlusGr",
+"CA","Quarter",
+"CA","RecordType",
+"CA","Sex",
+"CA","Ship",
+"CA","SpecCode",
+"CA","SpecCodeType",
+"CA","StNo",
+"CA","StomSamp",
+"CA","SweepLngt",
+"CA","Valid_Aphia","WoRMS AphiaID, the species join key. Always join on aphia -- never on latin or species/Species names, which are convenience labels only and can collide across synonyms."
+"CA","Year",
+"CPUEA","Age_0","Numbers per hour at age 0, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_1","Numbers per hour at age 1, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_10","Numbers per hour at age 10, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_11","Numbers per hour at age 11, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_12","Numbers per hour at age 12, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_13","Numbers per hour at age 13, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_14","Numbers per hour at age 14, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_15","Numbers per hour at age 15, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_2","Numbers per hour at age 2, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_3","Numbers per hour at age 3, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_4","Numbers per hour at age 4, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_5","Numbers per hour at age 5, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_6","Numbers per hour at age 6, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_7","Numbers per hour at age 7, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_8","Numbers per hour at age 8, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","Age_9","Numbers per hour at age 9, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"CPUEA","AphiaID","WoRMS AphiaID, the species join key. Always join on aphia -- never on latin or species/Species names, which are convenience labels only and can collide across synonyms."
+"CPUEA","Area","ICES statistical Area code for the haul, as returned by this product -- coarser than StatisticalRectangle and distinct from it. Not the same field as ICESArea elsewhere in DATRAS."
+"CPUEA","Cal_DateID","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"CPUEA","DateTime","Combined haul date+time string as returned by ICES for this CPUEA record. Redundant with HH's own Year/Month/Day/StartTime once joined via .id -- kept as ICES returns it, not reparsed here."
+"CPUEA","DayNight","Timing of sampling: at daytime or at night. See survey manuals for further details"
+"CPUEA","Depth","Sampling depth in metres, measured from the water surface."
+"CPUEA","Gear","Gear type code"
+"CPUEA","HaulNo","Sequential numbering of hauls during cruise."
+"CPUEA","Quarter","Cruise quarter. Hauls outside of the calendar quarter can be reported with the same quarter reference, if agreed by the survey group."
+"CPUEA","Sex","Gender of the described species category. In CA-records should be defined by dissection. If no determination was performed, report '-9'. If determination failed, report 'U'."
+"CPUEA","Ship","SeaDataNet Ship and Platform Codes"
+"CPUEA","ShootLat","Decimal latitude position on the shooting location"
+"CPUEA","ShootLon","Decimal longitude position on the shooting location"
+"CPUEA","Species","English common name for the species, as returned directly by ICES for this product. Capitalised to distinguish it from obus's own lowercase `species` lookup column (resolved via WoRMS from aphia, see dr_lookup_species) -- the two can disagree; join on aphia, don't compare these two text columns."
+"CPUEA","SubArea","ICES statistical SubArea code for the haul, as returned by this product. Finer than Area, still coarser than StatisticalRectangle."
+"CPUEA","Survey","Survey code as used in ICES products, see https://vocab.ices.dk/?codetypeguid=016362a4-90be-424b-af01-a37ae58ca023"
+"CPUEA","Year","Cruise year (YYYY)"
+"CPUEL","AphiaID","WoRMS AphiaID, the species join key. Always join on aphia -- never on latin or species/Species names, which are convenience labels only and can collide across synonyms."
+"CPUEL","Area","ICES statistical Area code for the haul, as returned by this product -- coarser than StatisticalRectangle and distinct from it. Not the same field as ICESArea elsewhere in DATRAS."
+"CPUEL","CPUE_number_per_hour","CPUE (catch numbers per hour) at this length class, pre-computed by ICES from HH+HL. Historical reference only -- ICES computes CPUEL for a subset of DATRAS surveys, not all of them; for new analysis covering every survey with one consistent methodology, prefer dr_con(""HL_standardised"") |> filter(type == ""length"")."
+"CPUEL","Cal_DateID","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"CPUEL","DateTime","Combined haul date+time string as returned by ICES for this CPUEL record. Redundant with HH's own Year/Month/Day/StartTime once joined via .id -- kept as ICES returns it, not reparsed here."
+"CPUEL","DayNight","Timing of sampling: at daytime or at night. See survey manuals for further details"
+"CPUEL","Depth","Sampling depth in metres, measured from the water surface."
+"CPUEL","Gear","Gear type code"
+"CPUEL","HaulDur","Haul duration in minutes. Start time is the moment when the gear settles at the bottom at the stated towing speed. Stop is defined as the start of hauling of the gear."
+"CPUEL","HaulNo","Sequential numbering of hauls during cruise."
+"CPUEL","LngtClas","Length class in millimetres, as returned directly by this product (from LngtClas). Unlike HL's own two-step LengthCode+LengthClass (which can be recorded in cm or mm depending on LengthCode, see dr_add_length_mm()), CPUEL always reports this already-converted to mm."
+"CPUEL","Quarter","Cruise quarter. Hauls outside of the calendar quarter can be reported with the same quarter reference, if agreed by the survey group."
+"CPUEL","Sex","Gender of the described species category. In CA-records should be defined by dissection. If no determination was performed, report '-9'. If determination failed, report 'U'."
+"CPUEL","Ship","SeaDataNet Ship and Platform Codes"
+"CPUEL","ShootLat","Decimal latitude position on the shooting location"
+"CPUEL","ShootLon","Decimal longitude position on the shooting location"
+"CPUEL","Species","English common name for the species, as returned directly by ICES for this product. Capitalised to distinguish it from obus's own lowercase `species` lookup column (resolved via WoRMS from aphia, see dr_lookup_species) -- the two can disagree; join on aphia, don't compare these two text columns."
+"CPUEL","SubArea","ICES statistical SubArea code for the haul, as returned by this product. Finer than Area, still coarser than StatisticalRectangle."
+"CPUEL","Survey","Survey code as used in ICES products, see https://vocab.ices.dk/?codetypeguid=016362a4-90be-424b-af01-a37ae58ca023"
+"CPUEL","Year","Cruise year (YYYY)"
+"FL","Cal_Distance",
+"FL","Cal_DoorSpread",
+"FL","Cal_WingSpread",
+"FL","Country","ISO 3166 country codes and region codes used by ICES"
+"FL","DSflag",
+"FL","DataType","Governs how NumberAtLength, TotalNumber, and SpeciesCategoryWeight in HL must be interpreted. The most common source of silent errors in user code. Must be joined from HH before any HL arithmetic."
+"FL","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"FL","Day","Sampling day, as part of the calendar date"
+"FL","DayNight","Timing of sampling: at daytime or at night. See survey manuals for further details"
+"FL","Depth","Sampling depth in metres, measured from the water surface."
+"FL","DepthStratum","Depth stratum in classes. Depth strata are survey specific, see survey manuals for details."
+"FL","Distance","Distance in metres between haul start and haul end point."
+"FL","DistanceFlag",
+"FL","DoorSpread","Mean value in metres of door spread measurements."
+"FL","Gear","Gear type code"
+"FL","HaulDur","Haul duration in minutes. Start time is the moment when the gear settles at the bottom at the stated towing speed. Stop is defined as the start of hauling of the gear."
+"FL","HaulNo","Sequential numbering of hauls during cruise."
+"FL","HaulVal","Validity assessment for the haul. Filter to valid hauls before computing abundance indices."
+"FL","ICESArea",
+"FL","Month","Sampling month, as part of the calendar date."
+"FL","Quarter","Cruise quarter. Hauls outside of the calendar quarter can be reported with the same quarter reference, if agreed by the survey group."
+"FL","RecordHeader","Definition of the data type recorded, affecting the layout of the data fields included on that record. HH=Haul Information, HL=Length Frequency Distribution, CA=individual fish recordings with biological information, LT= Litter data records"
+"FL","Ship","SeaDataNet Ship and Platform Codes"
+"FL","ShootLat","Decimal latitude position on the shooting location"
+"FL","ShootLong","Decimal longitude position on the shooting location"
+"FL","StatRec","Intended ICES statistical area rectangle (0.5 degrees latitude, 1 degree longitude)"
+"FL","Survey","Survey code as used in ICES products, see https://vocab.ices.dk/?codetypeguid=016362a4-90be-424b-af01-a37ae58ca023"
+"FL","SweepLngt","Length of sweep in metres. Recommended values depend on survey and quarter, see survey manuals for further details"
+"FL","SweptAreaDSKM2",
+"FL","SweptAreaWSKM2",
+"FL","TimeShot","Start time (GMT) of haul (HHMM), 4 digits. E.g. 10:15=1015"
+"FL","WSflag",
+"FL","Warplngt","Length of warp in metres. Defined by fishing depth. Warp/depth ratio is depends on survey, for further details see survey manuals."
+"FL","WingSpread","Mean value in metres of wing spread measurements. For more details see the manual."
+"FL","Year","Cruise year (YYYY)"
+"HH","-",
+"HH","BotCurDir",
+"HH","BotCurSpeed",
+"HH","BotSal",
+"HH","BotTemp",
+"HH","Buoyancy",
+"HH","BySpecRecCode","Recording tier for bycatch species at this haul. Paired with StandardSpeciesCode to assess whether a species absence reflects true absence or incomplete protocol coverage. Survey-specific; see survey manuals."
+"HH","CodendMesh",
+"HH","Country",
+"HH","DataType","Governs how NumberAtLength, TotalNumber, and SpeciesCategoryWeight in HL must be interpreted. The most common source of silent errors in user code. Must be joined from HH before any HL arithmetic."
+"HH","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"HH","Day",
+"HH","DayNight",
+"HH","Depth",
+"HH","DepthStratum",
+"HH","Distance",
+"HH","DoorSpread",
+"HH","DoorSurface",
+"HH","DoorType",
+"HH","DoorWgt",
+"HH","Gear",
+"HH","GearEx",
+"HH","GroundSpeed",
+"HH","HaulDur",
+"HH","HaulLat",
+"HH","HaulLong",
+"HH","HaulNo",
+"HH","HaulVal","Validity assessment for the haul. Filter to valid hauls before computing abundance indices."
+"HH","HydroStNo",
+"HH","KiteDim",
+"HH","MaxTrawlDepth",
+"HH","MinTrawlDepth",
+"HH","Month",
+"HH","Netopening",
+"HH","PelSampType",
+"HH","Quarter",
+"HH","RecordType",
+"HH","Rigging",
+"HH","SecchiDepth",
+"HH","Ship",
+"HH","ShootLat",
+"HH","ShootLong",
+"HH","SpeedWater",
+"HH","StNo",
+"HH","StatRec",
+"HH","StdSpecRecCode","Recording tier for the standard species list applied at this haul. Determines which hauls are valid for a given species abundance index; hauls below the required tier must be excluded before zero-filling. Survey-specific; see survey manuals."
+"HH","SurCurDir",
+"HH","SurCurSpeed",
+"HH","SurSal",
+"HH","SurTemp",
+"HH","SurveyIndexArea",
+"HH","SweepLngt",
+"HH","SwellDir",
+"HH","SwellHeight",
+"HH","ThClineDepth",
+"HH","ThermoCline",
+"HH","Tickler",
+"HH","TidePhase",
+"HH","TideSpeed",
+"HH","TimeShot",
+"HH","TowDir",
+"HH","Turbidity",
+"HH","WarpDen",
+"HH","Warpdia",
+"HH","Warplngt",
+"HH","WgtGroundRope",
+"HH","WindDir",
+"HH","WindSpeed",
+"HH","WingSpread",
+"HH","Year",
+"HL","-",
+"HL","CatCatchWgt",
+"HL","CatIdentifier","Size-based subsampling stratum identifier for a species/sex group within a haul. Used when catch is split into size grades with different SubsamplingFactor per stratum. Part of the HL grouping key (.id x aphia x sex x DevelopmentStage x SpeciesCategory)."
+"HL","Country",
+"HL","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"HL","DevStage","Developmental or maturity stage assessed by external observation. Rarely populated; most rows are NA. Part of the HL grouping key (.id x aphia x sex x DevelopmentStage x SpeciesCategory) when present."
+"HL","DoorType",
+"HL","Gear",
+"HL","GearEx",
+"HL","HLNoAtLngt",
+"HL","HaulNo",
+"HL","LenMeasType",
+"HL","LngtClass",
+"HL","LngtCode",
+"HL","NoMeas",
+"HL","Quarter",
+"HL","RecordType",
+"HL","Sex","Sex of the measured specimens, determined by visual bulk-catch examination (not dissection; dissection applies in CA). Part of the HL grouping key (.id x aphia x sex x DevelopmentStage x SpeciesCategory). For sexually dimorphic species, males and females appear in separate rows."
+"HL","Ship",
+"HL","SpecCode",
+"HL","SpecCodeType",
+"HL","SpecVal","Record type indicating what was measured for this species/haul group. Governs which rows to include in derived products; standard products retain only the primary full-record type."
+"HL","StNo",
+"HL","SubFactor","Raise factor for the measured sub-sample. Multiply NumberAtLength by SubsamplingFactor to estimate total catch at that length class. May vary between size strata within the same species/haul group when size-stratified subsampling is applied."
+"HL","SubWgt",
+"HL","SweepLngt",
+"HL","TotalNo","Total catch count for the species/sex/SpeciesCategory group. Repeated identically across every length row within the same group - deduplicate before summing. Semantics (per haul vs. per hour) depend on DataType. When size-stratified subsampling is used, reflects the stratum total, not the species-haul total."
+"HL","Valid_Aphia","WoRMS AphiaID, the species join key. Always join on aphia -- never on latin or species/Species names, which are convenience labels only and can collide across synonyms."
+"HL","Year",
+"IDX","AgePlusGroup","The plus-group age for this species/index-area/year: ages at or above this value are summed into one cell rather than reported individually. Varies by species (e.g. commonly 5-6 for herring/cod, higher for others) -- check this column before assuming Age_0..Age_15 are all individually meaningful for a given row."
+"IDX","Age_0","Numbers per hour at age 0, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_1","Numbers per hour at age 1, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_10","Numbers per hour at age 10, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_11","Numbers per hour at age 11, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_12","Numbers per hour at age 12, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_13","Numbers per hour at age 13, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_14","Numbers per hour at age 14, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_15","Numbers per hour at age 15, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_2","Numbers per hour at age 2, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_3","Numbers per hour at age 3, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_4","Numbers per hour at age 4, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_5","Numbers per hour at age 5, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_6","Numbers per hour at age 6, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_7","Numbers per hour at age 7, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_8","Numbers per hour at age 8, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","Age_9","Numbers per hour at age 9, raised per this survey's own age-length key and plus-group procedure (see PlusGrAge for IDX; CPUEA has no PlusGrAge column of its own -- cross-reference the matching IDX row's PlusGrAge, or the survey procedure document, for the plus-group cutoff). Ages at or above the plus-group are already summed into that age's cell; columns beyond it are structurally present but not meaningful for that species/row."
+"IDX","AphiaID","WoRMS AphiaID, the species join key. Always join on aphia -- never on latin or species/Species names, which are convenience labels only and can collide across synonyms."
+"IDX","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"IDX","IndexArea","Species- and expert-group-defined spatial aggregation unit the index is computed over (e.g. NS_Cod, NS_Herring for NS-IBTS) -- not a DATRAS StatisticalRectangle/ICESArea code. See the ICES survey procedure documents (NS-IBTS, BITS) for each index area's definition and parameters."
+"IDX","PlusGrAge","The plus-group age for this species/index-area/year: ages at or above this value are summed into one cell rather than reported individually. Varies by species (e.g. commonly 5-6 for herring/cod, higher for others) -- check this column before assuming Age_0..Age_15 are all individually meaningful for a given row."
+"IDX","Quarter","Cruise quarter. Hauls outside of the calendar quarter can be reported with the same quarter reference, if agreed by the survey group."
+"IDX","Sex","Gender of the described species category. In CA-records should be defined by dissection. If no determination was performed, report '-9'. If determination failed, report 'U'."
+"IDX","Species","English common name for the species, as returned directly by ICES for this product. Capitalised to distinguish it from obus's own lowercase `species` lookup column (resolved via WoRMS from aphia, see dr_lookup_species) -- the two can disagree; join on aphia, don't compare these two text columns."
+"IDX","Survey","Survey code as used in ICES products, see https://vocab.ices.dk/?codetypeguid=016362a4-90be-424b-af01-a37ae58ca023"
+"IDX","Year","Cruise year (YYYY)"
+"LT","BottomDepth","Sampling depth in metres, measured from the water surface."
+"LT","CodendMesh","Codend mesh size in mm"
+"LT","Country","ISO 3166 country codes and region codes used by ICES"
+"LT","DataType","Governs how NumberAtLength, TotalNumber, and SpeciesCategoryWeight in HL must be interpreted. The most common source of silent errors in user code. Must be joined from HH before any HL arithmetic."
+"LT","DateofCalculation","ICES Datacenter 'last calculated' timestamp for this record, an integer date. Encoding is table-dependent: HH/HL/CA/CW use YYYYMMDD; the FlexFile (FL) uses YYYYDDMM (day before month) -- do not assume one format across tables. A change in this value for an otherwise-identical record is a resubmission/recalculation signal, not new data."
+"LT","Day","Sampling day, as part of the calendar date"
+"LT","Distance","Distance in metres between haul start and haul end point."
+"LT","DoorSpread","Mean value in metres of door spread measurements."
+"LT","DoorSurface","Door surface area in square metres."
+"LT","DoorType","Type of door used"
+"LT","DoorWgt","Door weight in kilograms."
+"LT","EEZ",
+"LT","Gear","Gear type code"
+"LT","GearEx",
+"LT","GroundSpeed","Ground speed of towing in knots. Recommended speed depends on survey, see survey manuals for more details"
+"LT","HaulDur","Haul duration in minutes. Start time is the moment when the gear settles at the bottom at the stated towing speed. Stop is defined as the start of hauling of the gear."
+"LT","HaulLat","Decimal latitude position on the hauling location"
+"LT","HaulLong","Decimal longitude position on the hauling location"
+"LT","HaulNo","Sequential numbering of hauls during cruise."
+"LT","HaulVal","Validity assessment for the haul. Filter to valid hauls before computing abundance indices."
+"LT","LTPRP",
+"LT","LTREF",
+"LT","LTSRC",
+"LT","LTSZC",
+"LT","LT_Items",
+"LT","LT_Weight",
+"LT","MSFDArea",
+"LT","Month","Sampling month, as part of the calendar date."
+"LT","NMArea",
+"LT","Netopening","Mean value in metres of vertical net opening measurements. For details see the survey manual."
+"LT","OSPARArea",
+"LT","PARAM",
+"LT","Quarter","Cruise quarter. Hauls outside of the calendar quarter can be reported with the same quarter reference, if agreed by the survey group."
+"LT","Rigging","The way the gear is rigged. Rigging depends on survey, see survey manuals for further details."
+"LT","Ship","SeaDataNet Ship and Platform Codes"
+"LT","ShootLat","Decimal latitude position on the shooting location"
+"LT","ShootLong","Decimal longitude position on the shooting location"
+"LT","SpeedWater","Trawl speed on water in knots."
+"LT","StNo","Station number. National coding system, not defined by ICES."
+"LT","StatRec","Intended ICES statistical area rectangle (0.5 degrees latitude, 1 degree longitude)"
+"LT","Survey","Survey code as used in ICES products, see https://vocab.ices.dk/?codetypeguid=016362a4-90be-424b-af01-a37ae58ca023"
+"LT","SweepLngt","Length of sweep in metres. Recommended values depend on survey and quarter, see survey manuals for further details"
+"LT","SwellDir","Direction of swell in degrees. No movement=0, direction from south to north = 360, varying direction = -1"
+"LT","SwellHeight","Height of (swell) waves, in metres"
+"LT","TYPPL",
+"LT","Tickler","Amount of ticklers connected to the gear."
+"LT","TimeShot","Start time (GMT) of haul (HHMM), 4 digits. E.g. 10:15=1015"
+"LT","TowDir","Direction of towing in degrees. 360=direction from south to north."
+"LT","UnitItem",
+"LT","UnitWgt",
+"LT","WarpDen","Warp weight in kg per linear meter of warp. See survey manuals for more information."
+"LT","Warpdia","Warp diametre in millimetres."
+"LT","Warplngt","Length of warp in metres. Defined by fishing depth. Warp/depth ratio is depends on survey, for further details see survey manuals."
+"LT","WindDir","Direction of wind in degrees. Calm = 0,  direction from north to south = 360, varying direction = -1"
+"LT","WindSpeed","Speed of wind in metres/sec."
+"LT","WingSpread","Mean value in metres of wing spread measurements. For more details see the manual."
+"LT","Year","Cruise year (YYYY)"

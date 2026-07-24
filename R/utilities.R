@@ -142,44 +142,60 @@ simplify <- function(x) {
   x
 }
 
-# function to apply type fixes and new naming convention. 
+# function to apply type fixes and new naming convention.
 # Falls back to package default settings if arguments not provided
-formatDatras <- function(df, record = NULL, new_names = getOption("icesDatras.new_names"), fix_types = getOption("icesDatras.fix_types")){
+formatDatras <- function(df, record, new_names = getOption("icesDatras.new_names"), fix_types = getOption("icesDatras.fix_types")){
   stopifnot(new_names %in% c(TRUE, FALSE))
   stopifnot(fix_types %in% c(TRUE, FALSE))
-  
+
   if (fix_types) {
     df <- applyDatrasTypeSchema(df, record = record)
   }
-  
+
   if (new_names) {
     df <- applyDatrasNameSchema(df, record = record)
   }
   df
 }
 
-#Applies correct column types to DATRAS output
-applyDatrasTypeSchema <- function(df, record = NULL) {
-  
-  datras_field_list <- getDatrasFieldList()
-  
-  if (!is.null(record)) {
-    datras_field_list <- datras_field_list[datras_field_list["RecordHeader"] == record,]
+# Restricts datras_schema to the given RecordHeader(s). record has no default and is
+# validated here -- deliberately: before 2026-07-23, record = NULL (match everything,
+# unfiltered) was the default, and four functions (getIndices/getCPUELength/getCPUEAge/
+# getCatchWgt) had silently relied on it. That's fragile, not just permissive -- the same
+# raw field name can have a genuinely different DataFormat under different RecordHeaders
+# (e.g. AphiaID, DateofCalculation, PlusGr -- see AGENTS.md's "Authoritative schema project"),
+# so pooling risks silently applying the wrong one instead of failing loudly. A missing
+# argument now errors immediately (no default to fall back on); an unrecognised value errors
+# with a clear message instead of silently matching zero rows.
+filter_datras_schema <- function(record) {
+  stopifnot(is.character(record), length(record) >= 1, !anyNA(record))
+  unknown <- setdiff(record, unique(datras_schema$RecordHeader))
+  if (length(unknown) > 0) {
+    stop("Unknown RecordHeader(s) in 'record': ", paste(unknown, collapse = ", "),
+         ". Valid values are: ", paste(unique(datras_schema$RecordHeader), collapse = ", "),
+         call. = FALSE)
   }
-  
+  datras_schema[datras_schema[["RecordHeader"]] %in% record, ]
+}
+
+#Applies correct column types to DATRAS output
+applyDatrasTypeSchema <- function(df, record) {
+
+  datras_field_list <- filter_datras_schema(record)
+
   char_cols <- c(datras_field_list[datras_field_list[["DataFormat"]] == "char", "FieldNameOld"],
                  datras_field_list[datras_field_list[["DataFormat"]] == "char", "FieldName"])
-  
+
   int_cols <-  c(datras_field_list[datras_field_list[["DataFormat"]] == "int", "FieldNameOld"],
                  datras_field_list[datras_field_list[["DataFormat"]] == "int", "FieldName"])
-  
+
   dbl_cols <-  c(datras_field_list[datras_field_list[["DataFormat"]] == "decimal", "FieldNameOld"],
                  datras_field_list[datras_field_list[["DataFormat"]] == "decimal", "FieldName"])
-  
+
   char_cols <- intersect(char_cols, names(df))
   int_cols  <- intersect(int_cols, names(df))
   dbl_cols  <- intersect(dbl_cols, names(df))
-  
+
   df[char_cols] <- lapply(df[char_cols], as.character)
   df[int_cols]  <- lapply(df[int_cols], as.integer)
   df[dbl_cols]  <- lapply(df[dbl_cols], as.numeric)
@@ -194,14 +210,10 @@ applyDatrasTypeSchema <- function(df, record = NULL) {
 }
 
 # Applies new DATRAS column names to Datras output
-applyDatrasNameSchema <- function(df, record = NULL) {
-  
-  datras_field_list <- getDatrasFieldList()
-  
-  if (!is.null(record)) {
-    datras_field_list <- datras_field_list[datras_field_list[["RecordHeader"]] == record,]
-  }
-  
+applyDatrasNameSchema <- function(df, record) {
+
+  datras_field_list <- filter_datras_schema(record)
+
   cols <- intersect(datras_field_list$FieldNameOld, names(df))
   row_ids <- match(cols, datras_field_list$FieldNameOld)
   match_ids <- match(cols, names(df))

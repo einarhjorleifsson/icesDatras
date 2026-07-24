@@ -43,6 +43,7 @@ getCPUEAge <- function(survey, year, quarter, fix_types = getOption("icesDatras.
   out <- parseDatras(out)
   if (is.null(out)) return(data.frame())
   out <- formatDatras(out,
+                      record = "CPUEA",
                       fix_types = fix_types,
                       new_names = new_names)
 

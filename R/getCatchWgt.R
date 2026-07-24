@@ -126,6 +126,7 @@ getCatchWgt <- function(survey, years, quarters, aphia, fix_types = getOption("i
 
   rownames(out) <- NULL
   out <- formatDatras(out,
+                      record = c("HH", "HL"),
                       fix_types = fix_types,
                       new_names = new_names)
   out
